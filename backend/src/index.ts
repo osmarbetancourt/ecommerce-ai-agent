@@ -24,8 +24,8 @@ if (require.main === module && process.env.NODE_ENV) {
     try {
       await db.raw('SELECT 1');
       console.log('✅ Database connection successful');
-      await db.migrate.latest();
-      console.log('✅ Database migrations ran successfully');
+      //await db.migrate.latest();
+      //console.log('✅ Database migrations ran successfully');
       startServer();
     } catch (err) {
       console.error('❌ Database connection or migration failed:', err);

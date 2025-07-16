@@ -10,6 +10,9 @@
     "start": "node dist/src/index.js",
     "migrate:latest": "knex --knexfile knexfile.js migrate:latest --env development",
     "migrate:rollback": "knex --knexfile knexfile.js migrate:rollback --env development",
+    "migrate:prod": "knex --knexfile knexfile.js migrate:latest --env production",
+    "migrate:rollback:prod": "knex --knexfile knexfile.js migrate:rollback --env production",
+    "db:schema": "ts-node scripts/db-schema.ts",
     "test": "jest"
   },
   "dependencies": {
