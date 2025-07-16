@@ -12,8 +12,15 @@ const knex_1 = __importDefault(require("knex"));
 const knexfile_1 = __importDefault(require("../knexfile"));
 const environment = process.env.NODE_ENV || 'development';
 const db = (0, knex_1.default)(knexfile_1.default[environment]);
+const isTest = !!process.env.JEST_WORKER_ID;
+let nextApp, handle;
+if (!isTest) {
+    const dev = process.env.NODE_ENV !== 'production';
+    nextApp = (0, next_1.default)({ dev, dir: path_1.default.resolve(__dirname, '../../frontend') });
+    handle = nextApp.getRequestHandler();
+}
 // Only run DB connection and migrations when running as main module (not when imported for tests)
-if (require.main === module) {
+if (require.main === module && process.env.NODE_ENV) {
     (async () => {
         try {
             await db.raw('SELECT 1');
@@ -28,13 +35,9 @@ if (require.main === module) {
         }
     })();
 }
-// Helper to detect if running under Jest (test environment)
-const isTest = !!process.env.JEST_WORKER_ID;
-let nextApp, handle;
-if (!isTest) {
-    const dev = process.env.NODE_ENV !== 'production';
-    nextApp = (0, next_1.default)({ dev, dir: path_1.default.resolve(__dirname, '../../frontend') });
-    handle = nextApp.getRequestHandler();
+else {
+    console.log('Skipping DB validation: NODE_ENV is not set or TEST environment');
+    startServer();
 }
 // Factory function to create the Express app (for both server and tests)
 function createApp() {
