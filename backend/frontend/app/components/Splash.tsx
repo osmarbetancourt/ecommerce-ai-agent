@@ -1,7 +1,7 @@
 
 
 'use client';
-type SplashProps = { onDone?: () => void };
+type SplashProps = { onDone?: () => void; playSound?: boolean };
 
 import { useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -27,7 +27,7 @@ const BasketRight = (props: any) => (
   <svg width="48" height="48" viewBox="0 0 48 48" {...props}><rect x="0" y="0" width="48" height="48" fill="#F9E79F" /></svg>
 );
 
-export default function Splash({ onDone }: SplashProps) {
+export default function Splash({ onDone, playSound }: SplashProps) {
   const audioRef = useRef<HTMLAudioElement>(null);
   // Always call hooks first
   const [phase, setPhase] = useState<'splash' | 'logo' | 'done'>('splash');
@@ -83,10 +83,15 @@ export default function Splash({ onDone }: SplashProps) {
     let basketTimer: NodeJS.Timeout | null = null;
     let logoTimer: NodeJS.Timeout | null = null;
     if (phase === 'splash') {
-      // Wait 3 seconds, then trigger explosion
+      // Play sound if playSound is true
+      if (playSound && audioRef.current) {
+        audioRef.current.currentTime = 0;
+        audioRef.current.play().catch(() => {});
+      }
+      // Wait 3.2 seconds, then trigger explosion
       basketTimer = setTimeout(() => {
         setBasketExploded(true);
-      }, 3000);
+      }, 3200);
       // Logo phase starts after basket explodes and animation (e.g. 4.8s, was 3.8s)
       logoTimer = setTimeout(() => setPhase('logo'), 4800);
       return () => {
@@ -102,7 +107,7 @@ export default function Splash({ onDone }: SplashProps) {
       }, 3000); // 1.5s longer
       return () => clearTimeout(doneTimer);
     }
-  }, [phase]);
+  }, [phase, playSound]);
 
   useEffect(() => {
     const handleResize = () => {
@@ -113,9 +118,6 @@ export default function Splash({ onDone }: SplashProps) {
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
-
-  if (phase === 'done') return null;
-
   return (
     <>
       <AnimatePresence mode="wait">
@@ -264,17 +266,17 @@ export default function Splash({ onDone }: SplashProps) {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 1.2, ease: 'easeOut' }}
             style={{
-              color: '#5C7D5C',
-              fontWeight: 800,
+              color: '#fff',
+              fontWeight: 900,
               fontSize: '2.8rem',
-              marginBottom: '2.5rem',
+              marginBottom: '2.2rem',
               letterSpacing: '0.06em',
               textAlign: 'center',
               fontFamily: 'Montserrat, Arial, sans-serif',
-              textShadow: '0 2px 8px rgba(0,0,0,0.08)',
+              textShadow: '0 2px 8px rgba(230,126,34,0.12)',
             }}
           >
-            Fresh New Logo
+            <span style={{ color: '#F4C542', fontWeight: 900 }}>Fresh</span> <span style={{ color: '#5C7D5C', fontWeight: 900 }}>New Logo</span>
           </motion.div>
           <motion.img
             src="/fresh-food-logo.png"
@@ -297,6 +299,24 @@ export default function Splash({ onDone }: SplashProps) {
               Logo image not found. {/* Consider using an SVG for best quality and scalability. */}
             </div>
           )}
+          {/* Powered by AI below logo */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 1.2, delay: 0.8, ease: 'easeOut' }}
+            style={{
+              color: '#F4C542',
+              fontWeight: 700,
+              fontSize: '1.25rem',
+              marginTop: '2.2rem',
+              textAlign: 'center',
+              fontFamily: 'Inter, Arial, sans-serif',
+              letterSpacing: '0.04em',
+              textShadow: '0 2px 8px rgba(230,126,34,0.10)',
+            }}
+          >
+            Powered by AI
+          </motion.div>
         </motion.div>
       )}
       </AnimatePresence>
