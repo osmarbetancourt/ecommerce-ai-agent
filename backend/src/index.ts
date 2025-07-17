@@ -12,6 +12,12 @@ import ordersRouter from './routes/orders';
 import cartItemsRouter from './routes/cart_items';
 import conversationsRouter from './routes/conversations';
 import messagesRouter from './routes/messages';
+import notificationsRouter from './routes/notifications';
+import paymentMethodsRouter from './routes/payment_methods';
+import paymentMethodTypesRouter from './routes/payment_method_types';
+import orderItemsRouter from './routes/order_items';
+import reviewsRouter from './routes/reviews';
+
 const environment = process.env.NODE_ENV || 'development';
 
 const db = knex(config[environment]);
@@ -85,8 +91,6 @@ export function createApp() {
     }
   });
 
-  // ...existing code...
-
   // Mount modular routers
   app.use('/api/products', productsRouter);
   app.use('/api/categories', categoriesRouter);
@@ -96,6 +100,11 @@ export function createApp() {
   app.use('/api/conversations', conversationsRouter);
   app.use('/api/messages', messagesRouter);
   app.use('/api/users', usersRouter);
+  app.use('/api/notifications', notificationsRouter);
+  app.use('/api/order-items', orderItemsRouter);
+  app.use('/api/payment-methods', paymentMethodsRouter);
+  app.use('/api/payment-method-types', paymentMethodTypesRouter);
+  app.use('/api/reviews', reviewsRouter);
 
   // Only add Next.js catch-all if not in test
   if (!isTest && handle) {
