@@ -1,4 +1,3 @@
-
 import request from 'supertest';
 import { createApp } from '../src/index';
 
@@ -6,6 +5,24 @@ const app = createApp();
 
 describe('Products API integration', () => {
   let createdId: number | undefined;
+  let testCategoryId: number | undefined;
+
+  beforeAll(async () => {
+    // Create a test category for product FK
+    const category = { name: 'Test Category' };
+    const res = await request(app).post('/api/categories').send(category);
+    if (res.statusCode === 201 && res.body.id) {
+      testCategoryId = res.body.id;
+    }
+  });
+  // Always create a test category for products
+  beforeAll(async () => {
+    const category = { name: 'Test Category' };
+    const res = await request(app).post('/api/categories').send(category);
+    if (res.statusCode === 201 && res.body.id) {
+      testCategoryId = res.body.id;
+    }
+  });
 
   it('GET /api/products should return an array', async () => {
     const res = await request(app).get('/api/products');
@@ -21,7 +38,8 @@ describe('Products API integration', () => {
   // Only run mutating tests if NODE_ENV is 'test'
   const isTestEnv = process.env.NODE_ENV === 'test';
   (isTestEnv ? it : it.skip)('POST /api/products should create a product', async () => {
-    const product = { name: 'Test Product', price: 9.99, description: 'A test product' };
+    if (!testCategoryId) return;
+    const product = { name: 'Test Product', price: 9.99, category_id: testCategoryId };
     const res = await request(app).post('/api/products').send(product);
     expect(res.statusCode).toBe(201);
     expect(res.body).toHaveProperty('id');
@@ -53,5 +71,12 @@ describe('Products API integration', () => {
     // Confirm deletion
     const check = await request(app).get(`/api/products/${createdId}`);
     expect(check.statusCode).toBe(404);
+  });
+
+  (isTestEnv ? it : it.skip)('POST /api/products without category_id should fail with 400', async () => {
+    const product = { name: 'No Category Product', price: 5.99, description: 'Should fail' };
+    const res = await request(app).post('/api/products').send(product);
+    expect(res.statusCode).toBe(400);
+    expect(res.body).toHaveProperty('error');
   });
 });
