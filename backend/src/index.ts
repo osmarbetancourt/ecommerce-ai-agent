@@ -17,6 +17,9 @@ import paymentMethodsRouter from './routes/payment_methods';
 import paymentMethodTypesRouter from './routes/payment_method_types';
 import orderItemsRouter from './routes/order_items';
 import reviewsRouter from './routes/reviews';
+import rolesRouter from './routes/roles';
+import searchIndexRouter from './routes/search_index';
+import transactionsRouter from './routes/transactions';
 
 const environment = process.env.NODE_ENV || 'development';
 
@@ -105,6 +108,9 @@ export function createApp() {
   app.use('/api/payment-methods', paymentMethodsRouter);
   app.use('/api/payment-method-types', paymentMethodTypesRouter);
   app.use('/api/reviews', reviewsRouter);
+  app.use('/api/roles', rolesRouter);
+  app.use('/api/search-index', searchIndexRouter);
+  app.use('/api/transactions', transactionsRouter);
 
   // Only add Next.js catch-all if not in test
   if (!isTest && handle) {

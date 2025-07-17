@@ -10,6 +10,22 @@ const path_1 = __importDefault(require("path"));
 const next_1 = __importDefault(require("next"));
 const knex_1 = __importDefault(require("knex"));
 const knexfile_1 = __importDefault(require("../knexfile"));
+const products_1 = __importDefault(require("./routes/products"));
+const users_1 = __importDefault(require("./routes/users"));
+const categories_1 = __importDefault(require("./routes/categories"));
+const carts_1 = __importDefault(require("./routes/carts"));
+const orders_1 = __importDefault(require("./routes/orders"));
+const cart_items_1 = __importDefault(require("./routes/cart_items"));
+const conversations_1 = __importDefault(require("./routes/conversations"));
+const messages_1 = __importDefault(require("./routes/messages"));
+const notifications_1 = __importDefault(require("./routes/notifications"));
+const payment_methods_1 = __importDefault(require("./routes/payment_methods"));
+const payment_method_types_1 = __importDefault(require("./routes/payment_method_types"));
+const order_items_1 = __importDefault(require("./routes/order_items"));
+const reviews_1 = __importDefault(require("./routes/reviews"));
+const roles_1 = __importDefault(require("./routes/roles"));
+const search_index_1 = __importDefault(require("./routes/search_index"));
+const transactions_1 = __importDefault(require("./routes/transactions"));
 const environment = process.env.NODE_ENV || 'development';
 const db = (0, knex_1.default)(knexfile_1.default[environment]);
 const isTest = !!process.env.JEST_WORKER_ID;
@@ -25,8 +41,8 @@ if (require.main === module && process.env.NODE_ENV) {
         try {
             await db.raw('SELECT 1');
             console.log('✅ Database connection successful');
-            await db.migrate.latest();
-            console.log('✅ Database migrations ran successfully');
+            //await db.migrate.latest();
+            //console.log('✅ Database migrations ran successfully');
             startServer();
         }
         catch (err) {
@@ -74,257 +90,23 @@ function createApp() {
             res.status(500).json({ error: 'Failed to fetch database info', details: message });
         }
     });
-    // Helper to ensure price is a number
-    function normalizeProduct(product) {
-        if (product && typeof product.price === 'string') {
-            return { ...product, price: Number(product.price) };
-        }
-        return product;
-    }
-    // Helper to ensure total_price is a number
-    function normalizeOrder(order) {
-        if (order && typeof order.total_price === 'string') {
-            return { ...order, total_price: Number(order.total_price) };
-        }
-        return order;
-    }
-    // Get all products
-    app.get('/api/products', async (req, res) => {
-        try {
-            const products = await db('product').select('*');
-            res.json(products.map(normalizeProduct));
-        }
-        catch (err) {
-            res.status(500).json({ error: 'Failed to fetch products' });
-        }
-    });
-    // Get a single product by ID
-    app.get('/api/products/:id', async (req, res) => {
-        try {
-            const product = await db('product').where({ id: req.params.id }).first();
-            if (!product)
-                return res.status(404).json({ error: 'Product not found' });
-            res.json(normalizeProduct(product));
-        }
-        catch (err) {
-            res.status(500).json({ error: 'Failed to fetch product' });
-        }
-    });
-    // Create a new product
-    app.post('/api/products', async (req, res) => {
-        try {
-            const inserted = await db('product').insert(req.body).returning('id');
-            let id;
-            if (Array.isArray(inserted)) {
-                if (typeof inserted[0] === 'object' && inserted[0] !== null && 'id' in inserted[0]) {
-                    id = inserted[0].id;
-                }
-                else {
-                    id = inserted[0];
-                }
-            }
-            else {
-                id = inserted;
-            }
-            const newProduct = await db('product').where({ id }).first();
-            res.status(201).json(normalizeProduct(newProduct));
-        }
-        catch (err) {
-            res.status(400).json({ error: 'Failed to create product' });
-        }
-    });
-    // Update a product by ID
-    app.put('/api/products/:id', async (req, res) => {
-        try {
-            const updated = await db('product').where({ id: req.params.id }).update(req.body);
-            if (!updated)
-                return res.status(404).json({ error: 'Product not found' });
-            const product = await db('product').where({ id: req.params.id }).first();
-            res.json(normalizeProduct(product));
-        }
-        catch (err) {
-            res.status(400).json({ error: 'Failed to update product' });
-        }
-    });
-    // Delete a product by ID
-    app.delete('/api/products/:id', async (req, res) => {
-        try {
-            const deleted = await db('product').where({ id: req.params.id }).del();
-            if (!deleted)
-                return res.status(404).json({ error: 'Product not found' });
-            res.json({ success: true });
-        }
-        catch (err) {
-            res.status(400).json({ error: 'Failed to delete product' });
-        }
-    });
-    // ================= CATEGORY ENDPOINTS =================
-    app.get('/api/categories', async (req, res) => {
-        try {
-            const categories = await db('category').select('*');
-            res.json(categories);
-        }
-        catch (err) {
-            res.status(500).json({ error: 'Failed to fetch categories' });
-        }
-    });
-    app.get('/api/categories/:id', async (req, res) => {
-        try {
-            const category = await db('category').where({ id: req.params.id }).first();
-            if (!category)
-                return res.status(404).json({ error: 'Category not found' });
-            res.json(category);
-        }
-        catch (err) {
-            res.status(500).json({ error: 'Failed to fetch category' });
-        }
-    });
-    app.post('/api/categories', async (req, res) => {
-        try {
-            const inserted = await db('category').insert(req.body).returning('id');
-            let id = Array.isArray(inserted) ? (inserted[0]?.id ?? inserted[0]) : inserted;
-            const newCategory = await db('category').where({ id }).first();
-            res.status(201).json(newCategory);
-        }
-        catch (err) {
-            res.status(400).json({ error: 'Failed to create category' });
-        }
-    });
-    app.put('/api/categories/:id', async (req, res) => {
-        try {
-            const updated = await db('category').where({ id: req.params.id }).update(req.body);
-            if (!updated)
-                return res.status(404).json({ error: 'Category not found' });
-            const category = await db('category').where({ id: req.params.id }).first();
-            res.json(category);
-        }
-        catch (err) {
-            res.status(400).json({ error: 'Failed to update category' });
-        }
-    });
-    app.delete('/api/categories/:id', async (req, res) => {
-        try {
-            const deleted = await db('category').where({ id: req.params.id }).del();
-            if (!deleted)
-                return res.status(404).json({ error: 'Category not found' });
-            res.json({ success: true });
-        }
-        catch (err) {
-            res.status(400).json({ error: 'Failed to delete category' });
-        }
-    });
-    // ================= CART ENDPOINTS =================
-    app.get('/api/carts', async (req, res) => {
-        try {
-            const carts = await db('cart').select('*');
-            res.json(carts);
-        }
-        catch (err) {
-            res.status(500).json({ error: 'Failed to fetch carts' });
-        }
-    });
-    app.get('/api/carts/:id', async (req, res) => {
-        try {
-            const cart = await db('cart').where({ id: req.params.id }).first();
-            if (!cart)
-                return res.status(404).json({ error: 'Cart not found' });
-            const items = await db('cart_item').where({ cart_id: req.params.id });
-            res.json({ ...cart, items });
-        }
-        catch (err) {
-            res.status(500).json({ error: 'Failed to fetch cart' });
-        }
-    });
-    app.post('/api/carts', async (req, res) => {
-        try {
-            const inserted = await db('cart').insert(req.body).returning('id');
-            let id = Array.isArray(inserted) ? (inserted[0]?.id ?? inserted[0]) : inserted;
-            const newCart = await db('cart').where({ id }).first();
-            res.status(201).json(newCart);
-        }
-        catch (err) {
-            res.status(400).json({ error: 'Failed to create cart' });
-        }
-    });
-    app.put('/api/carts/:id', async (req, res) => {
-        try {
-            const updated = await db('cart').where({ id: req.params.id }).update(req.body);
-            if (!updated)
-                return res.status(404).json({ error: 'Cart not found' });
-            const cart = await db('cart').where({ id: req.params.id }).first();
-            res.json(cart);
-        }
-        catch (err) {
-            res.status(400).json({ error: 'Failed to update cart' });
-        }
-    });
-    app.delete('/api/carts/:id', async (req, res) => {
-        try {
-            const deleted = await db('cart').where({ id: req.params.id }).del();
-            if (!deleted)
-                return res.status(404).json({ error: 'Cart not found' });
-            res.json({ success: true });
-        }
-        catch (err) {
-            res.status(400).json({ error: 'Failed to delete cart' });
-        }
-    });
-    // ================= ORDER ENDPOINTS =================
-    app.get('/api/orders', async (req, res) => {
-        try {
-            const orders = await db('order').select('*');
-            res.json(orders.map(normalizeOrder));
-        }
-        catch (err) {
-            res.status(500).json({ error: 'Failed to fetch orders' });
-        }
-    });
-    app.get('/api/orders/:id', async (req, res) => {
-        try {
-            const order = await db('order').where({ id: req.params.id }).first();
-            if (!order)
-                return res.status(404).json({ error: 'Order not found' });
-            const items = await db('order_item').where({ order_id: req.params.id });
-            res.json({ ...normalizeOrder(order), items });
-        }
-        catch (err) {
-            res.status(500).json({ error: 'Failed to fetch order' });
-        }
-    });
-    app.post('/api/orders', async (req, res) => {
-        try {
-            const inserted = await db('order').insert(req.body).returning('id');
-            let id = Array.isArray(inserted) ? (inserted[0]?.id ?? inserted[0]) : inserted;
-            const newOrder = await db('order').where({ id }).first();
-            res.status(201).json(normalizeOrder(newOrder));
-        }
-        catch (err) {
-            res.status(400).json({ error: 'Failed to create order' });
-        }
-    });
-    app.put('/api/orders/:id', async (req, res) => {
-        try {
-            const updated = await db('order').where({ id: req.params.id }).update(req.body);
-            if (!updated)
-                return res.status(404).json({ error: 'Order not found' });
-            const order = await db('order').where({ id: req.params.id }).first();
-            res.json(normalizeOrder(order));
-        }
-        catch (err) {
-            res.status(400).json({ error: 'Failed to update order' });
-        }
-    });
-    app.delete('/api/orders/:id', async (req, res) => {
-        try {
-            const deleted = await db('order').where({ id: req.params.id }).del();
-            if (!deleted)
-                return res.status(404).json({ error: 'Order not found' });
-            res.json({ success: true });
-        }
-        catch (err) {
-            res.status(400).json({ error: 'Failed to delete order' });
-        }
-    });
+    // Mount modular routers
+    app.use('/api/products', products_1.default);
+    app.use('/api/categories', categories_1.default);
+    app.use('/api/carts', carts_1.default);
+    app.use('/api/orders', orders_1.default);
+    app.use('/api/cart-items', cart_items_1.default);
+    app.use('/api/conversations', conversations_1.default);
+    app.use('/api/messages', messages_1.default);
+    app.use('/api/users', users_1.default);
+    app.use('/api/notifications', notifications_1.default);
+    app.use('/api/order-items', order_items_1.default);
+    app.use('/api/payment-methods', payment_methods_1.default);
+    app.use('/api/payment-method-types', payment_method_types_1.default);
+    app.use('/api/reviews', reviews_1.default);
+    app.use('/api/roles', roles_1.default);
+    app.use('/api/search-index', search_index_1.default);
+    app.use('/api/transactions', transactions_1.default);
     // Only add Next.js catch-all if not in test
     if (!isTest && handle) {
         app.all('*', (req, res) => handle(req, res));
