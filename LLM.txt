@@ -1,0 +1,41 @@
+# LLM Context for Ecommerce AI Agent
+
+This file provides essential instructions and tips for LLM-powered agents, RAG systems, and AI assistants interacting with this platform.
+
+---
+
+## API & Data Access
+- All public API endpoints are documented in `endpoints_structure.md`.
+- For product search, use `/api/search-index` (supports keyword-based queries).
+- Auth (token/session) required for POST/PUT/DELETE endpoints. Only selected GET endpoints are public.
+- User carts, orders, and conversations are always per-user (see `data_structure.md` for schema).
+- Analytics endpoints are GET-only; read-only DB user for Tableau/PowerBI and live SQL editor.
+
+## System Constraints & Security
+- One live conversation per user.
+- All DB mutations require admin/system role.
+- Validate and sanitize all input for live SQL/BI features.
+- Composite unique constraints (e.g., one review per user per product) and indexes for performance.
+- Audit/log tables recommended for compliance (if needed).
+
+## Onboarding & Features
+- Bulk product/SKU import via CSV.
+- Admin dashboard for products, SKUs, orders, users, analytics.
+- AI assistant can suggest recipes, manage carts, mimic payment/delivery, and generate analytics reports.
+- See `README.md` for onboarding steps and deployment instructions.
+
+## Database & Schema
+- Normalized schema; refer to `data_structure.md` for columns, constraints, and relationships.
+- Key entities: USER, PRODUCT, CART, ORDER, TRANSACTION, REVIEW, ROLE, CONVERSATION, MESSAGE, NOTIFICATION, PAYMENT_METHOD, PAYMENT_METHOD_TYPE, CATEGORY, SEARCH_INDEX.
+
+## Test Coverage
+- Automated backend tests for all CRUD endpoints (see `tests_structure.md`).
+- Tests cover edge cases, error handling, and dependency setup.
+
+## Contact & Extensions
+- For further context or onboarding, see `README.md` and `/docs/` (if available).
+- For rich API usage, refer to OpenAPI spec (if present) or endpoint docs.
+
+---
+
+This file is designed for consumption by LLMs, RAG systems, and AI agents. For human onboarding, start at `README.md`.

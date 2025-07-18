@@ -13,10 +13,12 @@
     "migrate:prod": "knex --knexfile knexfile.js migrate:latest --env production",
     "migrate:rollback:prod": "knex --knexfile knexfile.js migrate:rollback --env production",
     "db:schema": "ts-node scripts/db-schema.ts",
+    "populate_db": "ts-node scripts/populate-db.ts",
     "test": "jest"
   },
   "dependencies": {
     "@types/jsonwebtoken": "^9.0.10",
+    "axios": "^1.10.0",
     "cors": "^2.8.5",
     "express": "^4.19.2",
     "google-auth-library": "^10.1.0",

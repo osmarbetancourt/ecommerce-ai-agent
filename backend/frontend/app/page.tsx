@@ -8,6 +8,7 @@ import Hero from "./components/Hero";
 import Categories from "./components/Categories";
 import Products from "./components/Products";
 import Footer from "./components/Footer";
+import { GoogleOAuthProvider } from '@react-oauth/google';
 
 export default function Home() {
   const [splashDone, setSplashDone] = useState(false);
@@ -26,7 +27,7 @@ export default function Home() {
   // ...no audio reset logic needed...
 
   return (
-    <>
+    <GoogleOAuthProvider clientId={process.env.VITE_GOOGLE_CLIENT_ID || process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || ""}>
       {/* Persistent audio element for MagicSplash sound */}
       <audio ref={audioRef} src="/mad_in_heaven_v2.MP3" preload="auto" style={{ display: 'none' }} />
       {/* Main splash, only shows on first load */}
@@ -46,6 +47,6 @@ export default function Home() {
           <Footer />
         </div>
       )}
-    </>
+    </GoogleOAuthProvider>
   );
 }

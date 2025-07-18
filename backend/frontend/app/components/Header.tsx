@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { GoogleLogin, googleLogout } from '@react-oauth/google';
 import { RefObject } from "react";
 
 type HeaderProps = { audioRef?: RefObject<HTMLAudioElement | null> };
@@ -11,10 +12,10 @@ export default function Header({ audioRef }: HeaderProps) {
     }
     return "shop";
   });
-  // Simulate user login and cart state
-  const userLoggedIn = false; // Change to true if user is logged in
-  const cartItems = 0; // Change to actual cart items count
-  const cartCount = userLoggedIn && cartItems > 0 ? cartItems : 0;
+  // User state
+  const [user, setUser] = useState<any>(null);
+  const cartItems = 0; // Replace with actual cart items count
+  const cartCount = user && cartItems > 0 ? cartItems : 0;
 
   useEffect(() => {
     const onHashChange = () => {
@@ -344,10 +345,9 @@ export default function Header({ audioRef }: HeaderProps) {
             </a>
             {/* User/Login button/icon */}
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', marginLeft: 12 }}>
-              {userLoggedIn ? (
+              {user ? (
                 <>
-                  {/* Simulated user info, replace with real user data */}
-                  <span style={{ fontWeight: 700, fontSize: '1.05rem', color: '#fff', marginRight: 4 }}>Osmar</span>
+                  <span style={{ fontWeight: 700, fontSize: '1.05rem', color: '#fff', marginRight: 4 }}>{user.name || user.email}</span>
                   <button aria-label="Logout" style={{
                     background: 'none',
                     border: 'none',
@@ -358,30 +358,32 @@ export default function Header({ audioRef }: HeaderProps) {
                     padding: '0.2rem 0.7rem',
                     borderRadius: 8,
                     transition: 'background 0.2s',
-                  }}>Logout</button>
+                  }}
+                    onClick={() => {
+                      googleLogout();
+                      setUser(null);
+                    }}
+                  >Logout</button>
                 </>
               ) : (
-                <button aria-label="Login with Google" style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 6,
-                  background: 'none',
-                  border: 'none',
-                  color: '#fff',
-                  fontWeight: 700,
-                  cursor: 'pointer',
-                  fontSize: '1.05rem',
-                  padding: '0.2rem 0.7rem',
-                  borderRadius: 8,
-                  transition: 'background 0.2s',
-                }}>
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false" style={{ marginRight: 4 }}>
-                    <circle cx="12" cy="12" r="10" stroke="#fff" strokeWidth="2" fill="none" />
-                    <path d="M12 7a2.5 2.5 0 1 1 0 5a2.5 2.5 0 0 1 0-5z" stroke="#fff" strokeWidth="2" fill="none" />
-                    <path d="M7 17c0-2.5 10-2.5 10 0" stroke="#fff" strokeWidth="2" fill="none" />
-                  </svg>
-                  Login
-                </button>
+                <GoogleLogin
+                  onSuccess={credentialResponse => {
+                    // You can send credentialResponse.credential to your backend for verification
+                    // For demo, decode basic info
+                    const base64Url = credentialResponse.credential?.split('.')[1];
+                    if (base64Url) {
+                      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                      const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+                        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+                      }).join(''));
+                      setUser(JSON.parse(jsonPayload));
+                    }
+                  }}
+                  onError={() => {
+                    alert('Google Login Failed');
+                  }}
+                  width={180}
+                />
               )}
             </span>
             <a
@@ -495,9 +497,9 @@ export default function Header({ audioRef }: HeaderProps) {
               >Cart</a>
               {/* User/Login button/icon for mobile - styled intentionally different for visibility */}
               <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', justifyContent: 'flex-start', gap: 8 }}>
-                {userLoggedIn ? (
+                {user ? (
                   <>
-                    <span style={{ fontWeight: 700, fontSize: '1.05rem', color: '#fff', marginRight: 4 }}>Osmar</span>
+                    <span style={{ fontWeight: 700, fontSize: '1.05rem', color: '#fff', marginRight: 4 }}>{user.name || user.email}</span>
                     <button aria-label="Logout" style={{
                       background: 'none',
                       border: 'none',
@@ -508,30 +510,30 @@ export default function Header({ audioRef }: HeaderProps) {
                       padding: '0.2rem 0.7rem',
                       borderRadius: 8,
                       transition: 'background 0.2s',
-                    }}>Logout</button>
+                    }}
+                      onClick={() => {
+                        googleLogout();
+                        setUser(null);
+                      }}
+                    >Logout</button>
                   </>
                 ) : (
-                  <button aria-label="Login with Google" style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 6,
-                    background: 'none',
-                    border: 'none',
-                    color: '#fff',
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                    fontSize: '1.05rem',
-                    padding: '0.2rem 0.7rem',
-                    borderRadius: 8,
-                    transition: 'background 0.2s',
-                  }}>
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false" style={{ marginRight: 4 }}>
-                      <circle cx="12" cy="12" r="10" stroke="#fff" strokeWidth="2" fill="none" />
-                      <path d="M12 7a2.5 2.5 0 1 1 0 5a2.5 2.5 0 0 1 0-5z" stroke="#fff" strokeWidth="2" fill="none" />
-                      <path d="M7 17c0-2.5 10-2.5 10 0" stroke="#fff" strokeWidth="2" fill="none" />
-                    </svg>
-                    Login
-                  </button>
+                  <GoogleLogin
+                    onSuccess={credentialResponse => {
+                      const base64Url = credentialResponse.credential?.split('.')[1];
+                      if (base64Url) {
+                        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                        const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+                          return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+                        }).join(''));
+                        setUser(JSON.parse(jsonPayload));
+                      }
+                    }}
+                    onError={() => {
+                      alert('Google Login Failed');
+                    }}
+                    width={180}
+                  />
                 )}
               </div>
             </div>
