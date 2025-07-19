@@ -15,7 +15,16 @@ const router = Router();
 
 router.get('/', async (req, res) => {
   try {
-    const products = await db('product').select('*');
+    const { search } = req.query;
+    let query = db('product').select('*');
+    if (search && typeof search === 'string' && search.trim() !== '') {
+      const term = `%${search.trim().toLowerCase()}%`;
+      query = query.where(function() {
+        this.whereRaw('LOWER(name) LIKE ?', [term])
+          .orWhereRaw('LOWER(description) LIKE ?', [term]);
+      });
+    }
+    const products = await query;
     res.json(products.map(normalizeProduct));
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch products' });

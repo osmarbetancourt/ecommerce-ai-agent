@@ -27,7 +27,16 @@ router.get('/:id', async (req, res) => {
 
 router.post('/', async (req, res) => {
   try {
-    const inserted = await db('category').insert(req.body).returning('id');
+    const { name } = req.body;
+    if (!name || typeof name !== 'string') {
+      return res.status(400).json({ error: 'Category name is required' });
+    }
+    // Check for duplicate name
+    const existing = await db('category').whereRaw('LOWER(name) = ?', [name.toLowerCase()]).first();
+    if (existing) {
+      return res.status(409).json({ error: 'Category with this name already exists' });
+    }
+    const inserted = await db('category').insert({ name }).returning('id');
     let id = Array.isArray(inserted) ? (inserted[0]?.id ?? inserted[0]) : inserted;
     const newCategory = await db('category').where({ id }).first();
     res.status(201).json(newCategory);

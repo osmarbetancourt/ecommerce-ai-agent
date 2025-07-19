@@ -1,19 +1,48 @@
 import React, { useState, useEffect } from "react";
-import { GoogleLogin, googleLogout } from '@react-oauth/google';
+import axios from 'axios';
+import { googleLogout, useGoogleLogin } from '@react-oauth/google';
 import { RefObject } from "react";
 
 type HeaderProps = { audioRef?: RefObject<HTMLAudioElement | null> };
 
 export default function Header({ audioRef }: HeaderProps) {
   const [menuOpen, setMenuOpen] = useState(false);
-  const [activeSection, setActiveSection] = useState<string>(() => {
+  const [activeSection, setActiveSection] = useState<string>("shop");
+
+  useEffect(() => {
     if (typeof window !== "undefined" && window.location.hash) {
-      return window.location.hash.replace('#', '');
+      setActiveSection(window.location.hash.replace('#', ''));
     }
-    return "shop";
-  });
+    const onHashChange = () => {
+      setActiveSection(window.location.hash.replace('#', ''));
+    };
+    window.addEventListener('hashchange', onHashChange);
+    return () => window.removeEventListener('hashchange', onHashChange);
+  }, []);
   // User state
   const [user, setUser] = useState<any>(null);
+  // Custom Google login button logic
+  const login = useGoogleLogin({
+    onSuccess: async (tokenResponse: any) => {
+      try {
+        // Get authorization code from Google response
+        const code = tokenResponse.code;
+        if (!code) throw new Error('No authorization code received');
+        // Send code to backend for secure id_token exchange
+        const res = await axios.post('/api/users/oauth/google', { code });
+        const { token, user } = res.data;
+        localStorage.setItem('jwt', token);
+        setUser(user);
+      } catch (err: any) {
+        alert('Google Login Failed: ' + (err?.response?.data?.error || err.message));
+      }
+    },
+    onError: () => {
+      alert('Google Login Failed');
+    },
+    flow: 'auth-code',
+    scope: 'openid email profile',
+  });
   const cartItems = 0; // Replace with actual cart items count
   const cartCount = user && cartItems > 0 ? cartItems : 0;
 
@@ -217,7 +246,7 @@ export default function Header({ audioRef }: HeaderProps) {
           position: "relative",
         }}>
           <div className="header-logo-col" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', minWidth: 200 }}>
-            <a href="#home" aria-label="Home">
+            <a href="/" aria-label="Home">
               <img
                 src="/fresh-food-logo.png"
                 alt="Fresh Food Logo"
@@ -347,6 +376,9 @@ export default function Header({ audioRef }: HeaderProps) {
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', marginLeft: 12 }}>
               {user ? (
                 <>
+                  {user.avatar_url && (
+                    <img src={user.avatar_url} alt={user.name || user.email} style={{ width: 32, height: 32, borderRadius: '50%', marginRight: 8, boxShadow: '0 1px 6px #E67E2244' }} />
+                  )}
                   <span style={{ fontWeight: 700, fontSize: '1.05rem', color: '#fff', marginRight: 4 }}>{user.name || user.email}</span>
                   <button aria-label="Logout" style={{
                     background: 'none',
@@ -362,28 +394,49 @@ export default function Header({ audioRef }: HeaderProps) {
                     onClick={() => {
                       googleLogout();
                       setUser(null);
+                      localStorage.removeItem('jwt');
                     }}
                   >Logout</button>
                 </>
               ) : (
-                <GoogleLogin
-                  onSuccess={credentialResponse => {
-                    // You can send credentialResponse.credential to your backend for verification
-                    // For demo, decode basic info
-                    const base64Url = credentialResponse.credential?.split('.')[1];
-                    if (base64Url) {
-                      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-                      const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
-                        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-                      }).join(''));
-                      setUser(JSON.parse(jsonPayload));
-                    }
-                  }}
-                  onError={() => {
-                    alert('Google Login Failed');
-                  }}
-                  width={180}
-                />
+                <button
+                onClick={() => login()}
+                aria-label="Sign in with Google"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  background: 'linear-gradient(90deg, #fffbe9 0%, #f4c542 100%)',
+                  border: '2px solid #4285F4',
+                  color: '#4285F4',
+                  fontWeight: 700,
+                  fontSize: '1rem',
+                  padding: '0.32rem 1.1rem',
+                  borderRadius: 20,
+                  boxShadow: '0 2px 12px 0 rgba(230,126,34,0.10)',
+                  outline: 'none',
+                  transition: 'background 0.2s, box-shadow 0.2s, border 0.2s, color 0.2s, transform 0.2s',
+                  cursor: 'pointer',
+                }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.background = '#e8f0fe';
+                  e.currentTarget.style.color = '#174ea6';
+                  e.currentTarget.style.transform = 'scale(1.03)';
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.background = 'linear-gradient(90deg, #fffbe9 0%, #f4c542 100%)';
+                  e.currentTarget.style.color = '#4285F4';
+                  e.currentTarget.style.transform = 'scale(1)';
+                }}
+              >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 48 48" style={{ marginRight: 6, verticalAlign: 'middle' }}>
+                    <path fill="#4285F4" d="M43.6 20.5H42V20H24v8h11.3c-1.6 4.3-5.7 7-11.3 7-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.9 1.2 8 3l6-6C35.3 5.5 29.9 3 24 3 12.9 3 4 11.9 4 23s8.9 20 20 20c11 0 20-8.9 20-20 0-1.3-.1-2.7-.4-4z"/>
+                    <path fill="#34A853" d="M6.3 14.7l6.6 4.8C14.5 16.1 18.9 13 24 13c3.1 0 5.9 1.2 8 3l6-6C35.3 5.5 29.9 3 24 3 15.6 3 8.1 8.7 6.3 14.7z"/>
+                    <path fill="#FBBC05" d="M24 43c5.4 0 10.4-1.8 14.3-4.9l-6.6-5.4C29.7 34.7 27 35.7 24 35.7c-5.6 0-10.3-3.6-12-8.7l-6.6 5.1C8.1 39.3 15.6 43 24 43z"/>
+                    <path fill="#EA4335" d="M43.6 20.5H42V20H24v8h11.3c-1.3 3.5-4.7 6-9.3 6-5.6 0-10.3-3.6-12-8.7l-6.6 5.1C8.1 39.3 15.6 43 24 43c6.6 0 12-5.4 12-12 0-1.3-.1-2.7-.4-4z"/>
+                  </svg>
+                  Sign in with Google
+                </button>
               )}
             </span>
             <a
@@ -499,6 +552,9 @@ export default function Header({ audioRef }: HeaderProps) {
               <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', justifyContent: 'flex-start', gap: 8 }}>
                 {user ? (
                   <>
+                    {user.avatar_url && (
+                      <img src={user.avatar_url} alt={user.name || user.email} style={{ width: 32, height: 32, borderRadius: '50%', marginRight: 8, boxShadow: '0 1px 6px #E67E2244' }} />
+                    )}
                     <span style={{ fontWeight: 700, fontSize: '1.05rem', color: '#fff', marginRight: 4 }}>{user.name || user.email}</span>
                     <button aria-label="Logout" style={{
                       background: 'none',
@@ -514,26 +570,49 @@ export default function Header({ audioRef }: HeaderProps) {
                       onClick={() => {
                         googleLogout();
                         setUser(null);
+                        localStorage.removeItem('jwt');
                       }}
                     >Logout</button>
                   </>
                 ) : (
-                  <GoogleLogin
-                    onSuccess={credentialResponse => {
-                      const base64Url = credentialResponse.credential?.split('.')[1];
-                      if (base64Url) {
-                        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-                        const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
-                          return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-                        }).join(''));
-                        setUser(JSON.parse(jsonPayload));
-                      }
+                  <button
+                    onClick={() => login()}
+                    aria-label="Sign in with Google"
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 8,
+                      background: '#fff',
+                      border: '1.5px solid #4285F4',
+                      color: '#4285F4',
+                      fontWeight: 600,
+                      fontSize: '1rem',
+                      padding: '0.32rem 1.1rem',
+                      borderRadius: 20,
+                      boxShadow: '0 1px 4px 0 rgba(66,133,244,0.10)',
+                      outline: 'none',
+                      transition: 'background 0.2s, box-shadow 0.2s, border 0.2s, color 0.2s, transform 0.2s',
+                      cursor: 'pointer',
                     }}
-                    onError={() => {
-                      alert('Google Login Failed');
+                    onMouseEnter={e => {
+                      e.currentTarget.style.background = '#e8f0fe';
+                      e.currentTarget.style.color = '#174ea6';
+                      e.currentTarget.style.transform = 'scale(1.03)';
                     }}
-                    width={180}
-                  />
+                    onMouseLeave={e => {
+                      e.currentTarget.style.background = '#fff';
+                      e.currentTarget.style.color = '#4285F4';
+                      e.currentTarget.style.transform = 'scale(1)';
+                    }}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 48 48" style={{ marginRight: 4 }}>
+                      <path fill="#4285F4" d="M43.6 20.5H42V20H24v8h11.3c-1.6 4.3-5.7 7-11.3 7-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.9 1.2 8 3l6-6C35.3 5.5 29.9 3 24 3 12.9 3 4 11.9 4 23s8.9 20 20 20c11 0 20-8.9 20-20 0-1.3-.1-2.7-.4-4z"/>
+                      <path fill="#34A853" d="M6.3 14.7l6.6 4.8C14.5 16.1 18.9 13 24 13c3.1 0 5.9 1.2 8 3l6-6C35.3 5.5 29.9 3 24 3 15.6 3 8.1 8.7 6.3 14.7z"/>
+                      <path fill="#FBBC05" d="M24 43c5.4 0 10.4-1.8 14.3-4.9l-6.6-5.4C29.7 34.7 27 35.7 24 35.7c-5.6 0-10.3-3.6-12-8.7l-6.6 5.1C8.1 39.3 15.6 43 24 43z"/>
+                      <path fill="#EA4335" d="M43.6 20.5H42V20H24v8h11.3c-1.3 3.5-4.7 6-9.3 6-5.6 0-10.3-3.6-12-8.7l-6.6 5.1C8.1 39.3 15.6 43 24 43c6.6 0 12-5.4 12-12 0-1.3-.1-2.7-.4-4z"/>
+                    </svg>
+                    Sign in with Google
+                  </button>
                 )}
               </div>
             </div>

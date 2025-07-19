@@ -12,13 +12,35 @@ const router = Router();
 // Google OAuth login/register
 router.post('/oauth/google', async (req, res) => {
   try {
-    const { idToken } = req.body;
-    if (!idToken) {
-      return res.status(400).json({ error: 'idToken is required' });
+    const { code } = req.body;
+    if (!code) {
+      return res.status(400).json({ error: 'Authorization code is required' });
     }
-    // Verify token
+    // Exchange code for tokens
+    const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
+    const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
+    const REDIRECT_URI = process.env.GOOGLE_REDIRECT_URI;
+    if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET || !REDIRECT_URI) {
+      return res.status(500).json({ error: 'Google OAuth environment variables missing' });
+    }
+    const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        code,
+        client_id: GOOGLE_CLIENT_ID,
+        client_secret: GOOGLE_CLIENT_SECRET,
+        redirect_uri: REDIRECT_URI,
+        grant_type: 'authorization_code',
+      }),
+    });
+    const tokenData = await tokenRes.json();
+    if (!tokenData.id_token) {
+      return res.status(400).json({ error: 'Failed to exchange code for id_token' });
+    }
+    // Verify id_token
     const ticket = await oauthClient.verifyIdToken({
-      idToken,
+      idToken: tokenData.id_token,
       audience: GOOGLE_CLIENT_ID,
     });
     const payload = ticket.getPayload();
@@ -59,10 +81,23 @@ router.post('/oauth/google', async (req, res) => {
       // Update last_login and avatar_url
       await db('user').where({ id: user.id }).update({ last_login: new Date(), avatar_url });
       user = await db('user').where({ id: user.id }).first();
+      console.log('[Google OAuth] Existing user updated:', user);
     }
-    res.json(user);
+
+    // Issue JWT/session token
+    const jwt = require('jsonwebtoken');
+    const JWT_SECRET = process.env.JWT_SECRET || 'changeme';
+    const tokenPayload = {
+      id: user.id,
+      email: user.email,
+      google_id: user.google_id,
+      name: user.name,
+      avatar_url: user.avatar_url,
+      role: user.role || null,
+    };
+    const token = jwt.sign(tokenPayload, JWT_SECRET, { expiresIn: '7d' });
+    res.json({ user, token });
   } catch (err) {
-    console.error('Google OAuth error:', err);
     res.status(400).json({ error: (err as any)?.message || 'Google OAuth failed' });
   }
 });
@@ -70,51 +105,6 @@ router.post('/oauth/google', async (req, res) => {
 
 // List all users
 router.get('/', async (req, res) => {
-// Google OAuth login/register
-router.post('/oauth/google', async (req, res) => {
-  try {
-    const { idToken } = req.body;
-    if (!idToken) {
-      return res.status(400).json({ error: 'idToken is required' });
-    }
-    // Verify token
-    const ticket = await oauthClient.verifyIdToken({
-      idToken,
-      audience: GOOGLE_CLIENT_ID,
-    });
-    const payload = ticket.getPayload();
-    if (!payload) {
-      return res.status(401).json({ error: 'Invalid Google token' });
-    }
-    const google_id = payload.sub;
-    const email = payload.email;
-    const name = payload.name;
-    const avatar_url = payload.picture;
-    if (!google_id || !email) {
-      return res.status(400).json({ error: 'Google token missing required fields' });
-    }
-    // Find or create user
-    let user = await db('user').where({ google_id }).orWhere({ email }).first();
-    if (!user) {
-      const [id] = await db('user').insert({
-        google_id,
-        email,
-        name,
-        avatar_url,
-        last_login: new Date(),
-      }).returning('id');
-      user = await db('user').where({ id }).first();
-    } else {
-      // Update last_login and avatar_url
-      await db('user').where({ id: user.id }).update({ last_login: new Date(), avatar_url });
-      user = await db('user').where({ id: user.id }).first();
-    }
-    res.json(user);
-  } catch (err) {
-    console.error('Google OAuth error:', err);
-    res.status(400).json({ error: (err as any)?.message || 'Google OAuth failed' });
-  }
-});
   try {
     const users = await db('user').select('*');
     res.json(users);

@@ -14,6 +14,7 @@
     "migrate:rollback:prod": "knex --knexfile knexfile.js migrate:rollback --env production",
     "db:schema": "ts-node scripts/db-schema.ts",
     "populate_db": "ts-node scripts/populate-db.ts",
+    "nuke_products": "ts-node scripts/nuke-products.ts",
     "test": "jest"
   },
   "dependencies": {

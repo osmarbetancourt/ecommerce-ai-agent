@@ -354,18 +354,16 @@
 ## Users
 
 ### POST /api/users/oauth/google
-- **Description:** Login or register a user via Google OAuth
-- **Example:**
-  ```http
-  POST /api/users/oauth/google
-  Content-Type: application/json
-  {
-    "idToken": "<Google ID Token>"
-  }
-  ```
-- **Required Body Params:**
-  - idToken (string)
-- **Response:** User object
+   ```http
+   POST /api/users/oauth/google
+   Content-Type: application/json
+   {
+     "code": "<Google OAuth Code>"
+   }
+   ```
+**Required Body Params:**
+  - code (string)
+**Response:** User object with JWT token
 
 ### GET /api/users
 - **Description:** List all users

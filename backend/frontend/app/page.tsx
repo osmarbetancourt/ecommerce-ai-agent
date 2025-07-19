@@ -4,7 +4,6 @@ import Splash from "./components/Splash";
 import MagicSplash from "./components/MagicSplash";
 import { useState, useEffect, useRef } from "react";
 import Header from "./components/Header";
-import Hero from "./components/Hero";
 import Categories from "./components/Categories";
 import Products from "./components/Products";
 import Footer from "./components/Footer";
@@ -13,9 +12,18 @@ import { GoogleOAuthProvider } from '@react-oauth/google';
 export default function Home() {
   const [splashDone, setSplashDone] = useState(false);
   const [showMagicSplash, setShowMagicSplash] = useState(false);
+  const [showSplash, setShowSplash] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);
 
   useEffect(() => {
+    // Only show splash if not seen before
+    if (typeof window !== "undefined") {
+      if (!localStorage.getItem("splashSeen")) {
+        setShowSplash(true);
+      } else {
+        setSplashDone(true);
+      }
+    }
     const handler = () => {
       setShowMagicSplash(true);
       setSplashDone(false);
@@ -24,14 +32,21 @@ export default function Home() {
     return () => window.removeEventListener('trigger-magic-splash', handler);
   }, []);
 
-  // ...no audio reset logic needed...
+  // When splash finishes, mark as seen
+  const handleSplashDone = () => {
+    setSplashDone(true);
+    setShowSplash(false);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("splashSeen", "true");
+    }
+  };
 
   return (
-    <GoogleOAuthProvider clientId={process.env.VITE_GOOGLE_CLIENT_ID || process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || ""}>
+    <GoogleOAuthProvider clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || ""}>
       {/* Persistent audio element for MagicSplash sound */}
       <audio ref={audioRef} src="/mad_in_heaven_v2.MP3" preload="auto" style={{ display: 'none' }} />
       {/* Main splash, only shows on first load */}
-      {!showMagicSplash && <Splash key="splash" onDone={() => setSplashDone(true)} />}
+      {showSplash && <Splash key="splash" onDone={handleSplashDone} />}
       {/* Magic splash, shows when triggered by event, with sound */}
       {showMagicSplash && (
         <MagicSplash key="magic" onDone={() => { setShowMagicSplash(false); setSplashDone(true); }} playSound />
@@ -40,7 +55,6 @@ export default function Home() {
         <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
           <main style={{ flex: 1 }}>
             <Header audioRef={audioRef} />
-            <Hero />
             <Categories />
             <Products />
           </main>

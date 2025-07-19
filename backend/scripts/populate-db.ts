@@ -26,8 +26,8 @@ const FIXED_CATEGORIES = [
 ];
 
 const API_BASE = 'http://localhost:5000/api';
-const JSONL_PATH = __dirname + '/groceries_with_images.jsonl';
-const MAX_PRODUCTS = 250;
+const JSONL_PATH = __dirname + '/groceries_with_images_2.jsonl';
+const MAX_PRODUCTS = 400;
 
 async function main() {
   // 1. Insert categories and store their IDs
