@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import knex from 'knex';
 import config from '../../knexfile';
+import { jwtMiddleware, requireAdmin } from '../middleware/auth';
 const environment = process.env.NODE_ENV || 'development';
 const db = knex(config[environment]);
 
@@ -45,7 +46,9 @@ router.post('/', async (req, res) => {
   }
 });
 
-router.put('/:id', async (req, res) => {
+
+
+router.put('/:id', jwtMiddleware, requireAdmin, async (req, res) => {
   try {
     const updated = await db('category').where({ id: Number(req.params.id) }).update(req.body);
     if (!updated) return res.status(404).json({ error: 'Category not found' });
@@ -56,7 +59,7 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', jwtMiddleware, requireAdmin, async (req, res) => {
   try {
     const deleted = await db('category').where({ id: Number(req.params.id) }).del();
     if (!deleted) return res.status(404).json({ error: 'Category not found' });

@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { jwtMiddleware } from '../middleware/auth';
 import knex from 'knex';
 import config from '../../knexfile';
 const environment = process.env.NODE_ENV || 'development';
@@ -7,7 +8,7 @@ const db = knex(config[environment]);
 const router = Router();
 
 // List all notifications
-router.get('/', async (req, res) => {
+router.get('/', jwtMiddleware, async (req, res) => {
   try {
     const notifications = await db('notification').select('*');
     res.json(notifications);
@@ -17,7 +18,7 @@ router.get('/', async (req, res) => {
 });
 
 // Get a single notification by id
-router.get('/:id', async (req, res) => {
+router.get('/:id', jwtMiddleware, async (req, res) => {
   try {
     const notification = await db('notification').where({ id: Number(req.params.id) }).first();
     if (!notification) return res.status(404).json({ error: 'Notification not found' });
@@ -28,7 +29,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // Create a notification
-router.post('/', async (req, res) => {
+router.post('/', jwtMiddleware, async (req, res) => {
   try {
     // Ensure 'content' is used, not 'comment'
     const notificationData = { ...req.body };
@@ -57,7 +58,7 @@ router.post('/', async (req, res) => {
 });
 
 // Mark as read/unread (update)
-router.put('/:id', async (req, res) => {
+router.put('/:id', jwtMiddleware, async (req, res) => {
   try {
     // Ensure 'content' is used, not 'comment'
     const notificationData = { ...req.body };
@@ -75,7 +76,7 @@ router.put('/:id', async (req, res) => {
 });
 
 // Delete a notification
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', jwtMiddleware, async (req, res) => {
   try {
     const deleted = await db('notification').where({ id: Number(req.params.id) }).del();
     if (!deleted) return res.status(404).json({ error: 'Notification not found' });

@@ -1,14 +1,16 @@
 import { Router } from 'express';
 import knex from 'knex';
 import config from '../../knexfile';
+import { jwtMiddleware } from '../middleware/auth';
+import { apiRateLimiter, validateCartItem } from '../middleware/security';
 const environment = process.env.NODE_ENV || 'development';
 const db = knex(config[environment]);
 
 const router = Router();
 // Get or create the current user's cart
-router.get('/me', async (req, res) => {
+router.get('/me', jwtMiddleware, apiRateLimiter, async (req, res) => {
   // For now, mock user_id (replace with JWT extraction later)
-  const user_id = Number(req.headers['x-user-id'] || 1); // Replace with real user id logic
+  const user_id = (req as any).user.id;
   try {
     let cart = await db('cart').where({ user_id }).first();
     if (!cart) {
@@ -32,7 +34,7 @@ router.get('/me', async (req, res) => {
   }
 });
 
-router.get('/', async (req, res) => {
+router.get('/', jwtMiddleware, apiRateLimiter, async (req, res) => {
   try {
     const carts = await db('cart').select('*');
     res.json(carts);
@@ -41,7 +43,7 @@ router.get('/', async (req, res) => {
   }
 });
 
-router.get('/:id', async (req, res) => {
+router.get('/:id', jwtMiddleware, apiRateLimiter, async (req, res) => {
   try {
     const cart = await db('cart').where({ id: Number(req.params.id) }).first();
     if (!cart) return res.status(404).json({ error: 'Cart not found' });
@@ -52,7 +54,7 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-router.post('/', async (req, res) => {
+router.post('/', jwtMiddleware, apiRateLimiter, async (req, res) => {
   try {
     const inserted: any = await db('cart').insert(req.body).returning('id');
     let id;
@@ -74,7 +76,7 @@ router.post('/', async (req, res) => {
   }
 });
 
-router.put('/:id', async (req, res) => {
+router.put('/:id', jwtMiddleware, apiRateLimiter, async (req, res) => {
   try {
     const updated = await db('cart').where({ id: Number(req.params.id) }).update(req.body);
     if (!updated) return res.status(404).json({ error: 'Cart not found' });
@@ -85,10 +87,15 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', jwtMiddleware, apiRateLimiter, async (req, res) => {
   try {
+    const cart = await db('cart').where({ id: Number(req.params.id) }).first();
+    if (!cart) return res.status(404).json({ error: 'Cart not found' });
+    const userId = (req as any).user.id;
+    if (cart.user_id !== userId) {
+      return res.status(403).json({ error: 'Forbidden: You do not own this cart' });
+    }
     const deleted = await db('cart').where({ id: Number(req.params.id) }).del();
-    if (!deleted) return res.status(404).json({ error: 'Cart not found' });
     res.json({ success: true });
   } catch (err) {
     res.status(400).json({ error: 'Failed to delete cart' });

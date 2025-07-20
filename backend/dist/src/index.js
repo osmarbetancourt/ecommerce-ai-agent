@@ -26,6 +26,7 @@ const reviews_1 = __importDefault(require("./routes/reviews"));
 const roles_1 = __importDefault(require("./routes/roles"));
 const search_index_1 = __importDefault(require("./routes/search_index"));
 const transactions_1 = __importDefault(require("./routes/transactions"));
+const cookie_parser_1 = __importDefault(require("cookie-parser"));
 const environment = process.env.NODE_ENV || 'development';
 const db = (0, knex_1.default)(knexfile_1.default[environment]);
 const isTest = !!process.env.JEST_WORKER_ID;
@@ -60,6 +61,7 @@ function createApp() {
     const app = (0, express_1.default)();
     app.use((0, cors_1.default)());
     app.use(express_1.default.json());
+    app.use((0, cookie_parser_1.default)());
     // Healthcheck endpoint for Docker
     app.get('/health', (req, res) => {
         res.status(200).send('OK');

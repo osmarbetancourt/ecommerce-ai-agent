@@ -22,6 +22,7 @@ import searchIndexRouter from './routes/search_index';
 import transactionsRouter from './routes/transactions';
 
 import cookieParser from 'cookie-parser';
+import { apiRateLimiter, securityHeaders, corsMiddleware, csrfProtection } from './middleware/security';
 
 const environment = process.env.NODE_ENV || 'development';
 

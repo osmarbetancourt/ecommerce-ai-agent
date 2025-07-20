@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { jwtMiddleware } from '../middleware/auth';
 import knex from 'knex';
 import config from '../../knexfile';
 const environment = process.env.NODE_ENV || 'development';
@@ -13,7 +14,10 @@ function normalizeOrder(order: any) {
 
 const router = Router();
 
-router.get('/', async (req, res) => {
+// List all orders (admin only)
+router.get('/', jwtMiddleware, async (req, res) => {
+  const isAdmin = (req as any).user?.role === 'admin';
+  if (!isAdmin) return res.status(403).json({ error: 'Forbidden' });
   try {
     const orders = await db('order').select('*');
     res.json(orders.map(normalizeOrder));
@@ -22,10 +26,16 @@ router.get('/', async (req, res) => {
   }
 });
 
-router.get('/:id', async (req, res) => {
+// Get a single order by id (owner or admin)
+router.get('/:id', jwtMiddleware, async (req, res) => {
+  const userId = (req as any).user?.id;
+  const isAdmin = (req as any).user?.role === 'admin';
   try {
     const order = await db('order').where({ id: Number(req.params.id) }).first();
     if (!order) return res.status(404).json({ error: 'Order not found' });
+    if (!isAdmin && order.user_id !== userId) {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
     const items = await db('order_item').where({ order_id: req.params.id });
     res.json({ ...normalizeOrder(order), items });
   } catch (err) {
@@ -33,9 +43,11 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-router.post('/', async (req, res) => {
+// Create an order (authenticated user only)
+router.post('/', jwtMiddleware, async (req, res) => {
+  const userId = (req as any).user?.id;
   try {
-    const inserted = await db('order').insert(req.body).returning('id');
+    const inserted = await db('order').insert({ ...req.body, user_id: userId }).returning('id');
     let id = Array.isArray(inserted) ? (inserted[0]?.id ?? inserted[0]) : inserted;
     const newOrder = await db('order').where({ id }).first();
     res.status(201).json(normalizeOrder(newOrder));
@@ -44,21 +56,35 @@ router.post('/', async (req, res) => {
   }
 });
 
-router.put('/:id', async (req, res) => {
+// Update an order (owner or admin)
+router.put('/:id', jwtMiddleware, async (req, res) => {
+  const userId = (req as any).user?.id;
+  const isAdmin = (req as any).user?.role === 'admin';
+  const order = await db('order').where({ id: Number(req.params.id) }).first();
+  if (!order) return res.status(404).json({ error: 'Order not found' });
+  if (!isAdmin && order.user_id !== userId) {
+    return res.status(403).json({ error: 'Forbidden' });
+  }
   try {
     const updated = await db('order').where({ id: Number(req.params.id) }).update(req.body);
-    if (!updated) return res.status(404).json({ error: 'Order not found' });
-    const order = await db('order').where({ id: Number(req.params.id) }).first();
-    res.json(normalizeOrder(order));
+    const updatedOrder = await db('order').where({ id: Number(req.params.id) }).first();
+    res.json(normalizeOrder(updatedOrder));
   } catch (err) {
     res.status(400).json({ error: 'Failed to update order' });
   }
 });
 
-router.delete('/:id', async (req, res) => {
+// Delete an order (owner or admin)
+router.delete('/:id', jwtMiddleware, async (req, res) => {
+  const userId = (req as any).user?.id;
+  const isAdmin = (req as any).user?.role === 'admin';
+  const order = await db('order').where({ id: Number(req.params.id) }).first();
+  if (!order) return res.status(404).json({ error: 'Order not found' });
+  if (!isAdmin && order.user_id !== userId) {
+    return res.status(403).json({ error: 'Forbidden' });
+  }
   try {
     const deleted = await db('order').where({ id: Number(req.params.id) }).del();
-    if (!deleted) return res.status(404).json({ error: 'Order not found' });
     res.json({ success: true });
   } catch (err) {
     res.status(400).json({ error: 'Failed to delete order' });

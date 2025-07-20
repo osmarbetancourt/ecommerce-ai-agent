@@ -1,4 +1,6 @@
 import { Router } from 'express';
+import { jwtMiddleware } from '../middleware/auth';
+import { apiRateLimiter, validateCartItem } from '../middleware/security';
 import knex from 'knex';
 import config from '../../knexfile';
 const environment = process.env.NODE_ENV || 'development';
@@ -7,9 +9,18 @@ const db = knex(config[environment]);
 const router = Router();
 
 // Get all cart items
-router.get('/', async (req, res) => {
+// Public GET: No rate limit for now, but can be added if needed
+import { Request, Response } from 'express';
+
+// Only allow authenticated users to see their own cart items
+router.get('/', jwtMiddleware, async (req: Request, res: Response) => {
   try {
-    const items = await db('cart_item').select('*');
+    const userId = (req as any).user.id;
+    // Find all cart items for carts owned by this user
+    const items = await db('cart_item')
+      .join('cart', 'cart_item.cart_id', 'cart.id')
+      .where('cart.user_id', userId)
+      .select('cart_item.*');
     res.json(items);
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch cart items' });
@@ -17,8 +28,15 @@ router.get('/', async (req, res) => {
 });
 
 // Get all items for a specific cart
-router.get('/cart/:cartId', async (req, res) => {
+// Public GET: No rate limit for now
+router.get('/cart/:cartId', jwtMiddleware, async (req: Request, res: Response) => {
   try {
+    const userId = (req as any).user.id;
+    // Check that the cart belongs to the user
+    const cart = await db('cart').where({ id: req.params.cartId, user_id: userId }).first();
+    if (!cart) {
+      return res.status(403).json({ error: 'Forbidden: Cart does not belong to user' });
+    }
     const items = await db('cart_item').where({ cart_id: req.params.cartId });
     res.json(items);
   } catch (err) {
@@ -27,10 +45,18 @@ router.get('/cart/:cartId', async (req, res) => {
 });
 
 // Get a single cart item by ID
-router.get('/:id', async (req, res) => {
+// Public GET: No rate limit for now
+router.get('/:id', jwtMiddleware, async (req: Request, res: Response) => {
   try {
-    const item = await db('cart_item').where({ id: Number(req.params.id) }).first();
-    if (!item) return res.status(404).json({ error: 'Cart item not found' });
+    const userId = (req as any).user.id;
+    // Find the cart item and check ownership
+    const item = await db('cart_item')
+      .join('cart', 'cart_item.cart_id', 'cart.id')
+      .where('cart_item.id', Number(req.params.id))
+      .where('cart.user_id', userId)
+      .select('cart_item.*')
+      .first();
+    if (!item) return res.status(404).json({ error: 'Cart item not found or not owned by user' });
     res.json(item);
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch cart item' });
@@ -38,7 +64,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // Add a new item to a cart
-router.post('/', async (req, res) => {
+router.post('/', jwtMiddleware, apiRateLimiter, validateCartItem, async (req: Request, res: Response) => {
   try {
     const { cart_id, product_id, quantity } = req.body;
     if (!cart_id || !product_id || !quantity) {
@@ -64,7 +90,7 @@ router.post('/', async (req, res) => {
 });
 
 // Update a cart item
-router.put('/:id', async (req, res) => {
+router.put('/:id', jwtMiddleware, apiRateLimiter, async (req: Request, res: Response) => {
   try {
     const updated = await db('cart_item').where({ id: Number(req.params.id) }).update(req.body);
     if (!updated) return res.status(404).json({ error: 'Cart item not found' });
@@ -76,10 +102,18 @@ router.put('/:id', async (req, res) => {
 });
 
 // Remove a cart item
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', jwtMiddleware, apiRateLimiter, async (req: Request, res: Response) => {
   try {
-    const deleted = await db('cart_item').where({ id: Number(req.params.id) }).del();
-    if (!deleted) return res.status(404).json({ error: 'Cart item not found' });
+    // Find the cart item and its cart
+    const cartItem = await db('cart_item').where({ id: Number(req.params.id) }).first();
+    if (!cartItem) return res.status(404).json({ error: 'Cart item not found' });
+    const cart = await db('cart').where({ id: cartItem.cart_id }).first();
+    if (!cart) return res.status(404).json({ error: 'Cart not found for this item' });
+    const userId = (req as any).user.id;
+    if (cart.user_id !== userId) {
+      return res.status(403).json({ error: 'Forbidden: You do not own this cart item' });
+    }
+    await db('cart_item').where({ id: Number(req.params.id) }).del();
     res.json({ success: true });
   } catch (err) {
     res.status(400).json({ error: 'Failed to delete cart item' });

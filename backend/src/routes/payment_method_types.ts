@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { jwtMiddleware } from '../middleware/auth';
 import knex from 'knex';
 import config from '../../knexfile';
 const environment = process.env.NODE_ENV || 'development';
@@ -7,7 +8,7 @@ const db = knex(config[environment]);
 const router = Router();
 
 // List all payment method types
-router.get('/', async (req, res) => {
+router.get('/', jwtMiddleware, async (req, res) => {
   try {
     const types = await db('payment_method_type').select('*');
     res.json(types);
@@ -17,7 +18,7 @@ router.get('/', async (req, res) => {
 });
 
 // Get a single payment method type by id
-router.get('/:id', async (req, res) => {
+router.get('/:id', jwtMiddleware, async (req, res) => {
   try {
     const type = await db('payment_method_type').where({ id: Number(req.params.id) }).first();
     if (!type) return res.status(404).json({ error: 'Payment method type not found' });
@@ -28,7 +29,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // Add a payment method type
-router.post('/', async (req, res) => {
+router.post('/', jwtMiddleware, async (req, res) => {
   try {
     const inserted: any = await db('payment_method_type').insert(req.body).returning('id');
     let id;
@@ -51,7 +52,7 @@ router.post('/', async (req, res) => {
 });
 
 // Update a payment method type
-router.put('/:id', async (req, res) => {
+router.put('/:id', jwtMiddleware, async (req, res) => {
   try {
     const updated = await db('payment_method_type').where({ id: Number(req.params.id) }).update(req.body);
     if (!updated) return res.status(404).json({ error: 'Payment method type not found' });
@@ -63,7 +64,7 @@ router.put('/:id', async (req, res) => {
 });
 
 // Delete a payment method type
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', jwtMiddleware, async (req, res) => {
   try {
     const deleted = await db('payment_method_type').where({ id: Number(req.params.id) }).del();
     if (!deleted) return res.status(404).json({ error: 'Payment method type not found' });
