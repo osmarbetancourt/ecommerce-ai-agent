@@ -13,6 +13,7 @@ export default function Home() {
   const [splashDone, setSplashDone] = useState(false);
   const [showMagicSplash, setShowMagicSplash] = useState(false);
   const [showSplash, setShowSplash] = useState(false);
+  const [showSplashAfterMagic, setShowSplashAfterMagic] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);
 
   useEffect(() => {
@@ -36,9 +37,16 @@ export default function Home() {
   const handleSplashDone = () => {
     setSplashDone(true);
     setShowSplash(false);
+    setShowSplashAfterMagic(false);
     if (typeof window !== "undefined") {
       localStorage.setItem("splashSeen", "true");
     }
+  };
+
+  // When MagicSplash finishes, trigger Splash (after magic)
+  const handleMagicSplashDone = () => {
+    setShowMagicSplash(false);
+    setShowSplashAfterMagic(true);
   };
 
   return (
@@ -49,8 +57,10 @@ export default function Home() {
       {showSplash && <Splash key="splash" onDone={handleSplashDone} />}
       {/* Magic splash, shows when triggered by event, with sound */}
       {showMagicSplash && (
-        <MagicSplash key="magic" onDone={() => { setShowMagicSplash(false); setSplashDone(true); }} playSound />
+        <MagicSplash key="magic" onDone={handleMagicSplashDone} playSound />
       )}
+      {/* Splash after MagicSplash */}
+      {showSplashAfterMagic && <Splash key="splash-after-magic" onDone={handleSplashDone} />}
       {splashDone && (
         <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
           <main style={{ flex: 1 }}>

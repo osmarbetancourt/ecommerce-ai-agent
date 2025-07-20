@@ -1,6 +1,8 @@
+
 import fs from 'fs';
 import readline from 'readline';
-import axios from 'axios';
+import knex from 'knex';
+import config from '../knexfile';
 
 // Fixed categories
 const FIXED_CATEGORIES = [
@@ -25,23 +27,24 @@ const FIXED_CATEGORIES = [
   'Snacks',
 ];
 
-const API_BASE = 'http://localhost:5000/api';
 const JSONL_PATH = __dirname + '/groceries_with_images_2.jsonl';
-const MAX_PRODUCTS = 800;
+const MAX_PRODUCTS = 1400;
+
+const environment = process.env.NODE_ENV || 'development';
+const db = knex(config[environment]);
 
 async function main() {
   // 1. Insert categories and store their IDs
   const categoryIdMap: Record<string, number> = {};
   for (const cat of FIXED_CATEGORIES) {
     try {
-      // Try to create category
-      const res = await axios.post(`${API_BASE}/categories`, { name: cat });
-      categoryIdMap[cat] = res.data.id;
+      // Try to insert category
+      const [id] = await db('category').insert({ name: cat }).returning('id');
+      categoryIdMap[cat] = typeof id === 'object' ? id.id : id;
     } catch (err: any) {
       // If already exists, fetch its ID
       try {
-        const getRes = await axios.get(`${API_BASE}/categories`);
-        const found = getRes.data.find((c: any) => c.name === cat);
+        const found = await db('category').where({ name: cat }).first();
         if (found) categoryIdMap[cat] = found.id;
       } catch (e) {
         console.error(`Failed to fetch category '${cat}':`, (e as any).message);
@@ -80,7 +83,7 @@ async function main() {
       // Add more fields as needed
     };
     try {
-      await axios.post(`${API_BASE}/products`, payload);
+      await db('product').insert(payload);
       imported++;
       if (imported % 25 === 0) console.log(`Imported ${imported} products...`);
     } catch (err: any) {
@@ -88,6 +91,7 @@ async function main() {
     }
   }
   console.log(`Done! Imported ${imported} products.`);
+  await db.destroy();
 }
 
 main().catch(err => {

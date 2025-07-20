@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { jwtMiddleware, requireAdmin } from '../middleware/auth';
 import knex from 'knex';
 import config from '../../knexfile';
 const environment = process.env.NODE_ENV || 'development';
@@ -51,7 +52,8 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-router.post('/', async (req, res) => {
+// Create a product (admin only)
+router.post('/', jwtMiddleware, requireAdmin, async (req, res) => {
   try {
     const { name, price, category_id } = req.body;
     if (!name || price === undefined || category_id === undefined) {
@@ -80,7 +82,8 @@ router.post('/', async (req, res) => {
   }
 });
 
-router.put('/:id', async (req, res) => {
+// Update a product (admin only)
+router.put('/:id', jwtMiddleware, requireAdmin, async (req, res) => {
   try {
     const updated = await db('product').where({ id: Number(req.params.id) }).update(req.body);
     if (!updated) return res.status(404).json({ error: 'Product not found' });
@@ -91,7 +94,8 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-router.delete('/:id', async (req, res) => {
+// Delete a product (admin only)
+router.delete('/:id', jwtMiddleware, requireAdmin, async (req, res) => {
   try {
     const deleted = await db('product').where({ id: Number(req.params.id) }).del();
     if (!deleted) return res.status(404).json({ error: 'Product not found' });

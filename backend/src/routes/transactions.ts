@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { jwtMiddleware } from '../middleware/auth';
 import knex from 'knex';
 import config from '../../knexfile';
 const environment = process.env.NODE_ENV || 'development';
@@ -7,7 +8,10 @@ const db = knex(config[environment]);
 const router = Router();
 
 // List all transactions
-router.get('/', async (req, res) => {
+// List all transactions (admin only)
+router.get('/', jwtMiddleware, async (req, res) => {
+  const isAdmin = (req as any).user?.role === 'admin';
+  if (!isAdmin) return res.status(403).json({ error: 'Forbidden' });
   try {
     const transactions = await db('transaction').select('*');
     res.json(transactions);
@@ -17,7 +21,13 @@ router.get('/', async (req, res) => {
 });
 
 // Get transactions by user id
-router.get('/user/:userId', async (req, res) => {
+// Get transactions by user id (owner or admin)
+router.get('/user/:userId', jwtMiddleware, async (req, res) => {
+  const userId = (req as any).user?.id;
+  const isAdmin = (req as any).user?.role === 'admin';
+  if (!isAdmin && req.params.userId !== String(userId)) {
+    return res.status(403).json({ error: 'Forbidden' });
+  }
   try {
     const transactions = await db('transaction').where({ user_id: req.params.userId });
     res.json(transactions);
@@ -27,7 +37,16 @@ router.get('/user/:userId', async (req, res) => {
 });
 
 // Get transactions by order id
-router.get('/order/:orderId', async (req, res) => {
+// Get transactions by order id (owner or admin)
+router.get('/order/:orderId', jwtMiddleware, async (req, res) => {
+  // Fetch the order to check ownership
+  const userId = (req as any).user?.id;
+  const isAdmin = (req as any).user?.role === 'admin';
+  const order = await db('order').where({ id: req.params.orderId }).first();
+  if (!order) return res.status(404).json({ error: 'Order not found' });
+  if (!isAdmin && order.user_id !== userId) {
+    return res.status(403).json({ error: 'Forbidden' });
+  }
   try {
     const transactions = await db('transaction').where({ order_id: req.params.orderId });
     res.json(transactions);
@@ -37,20 +56,24 @@ router.get('/order/:orderId', async (req, res) => {
 });
 
 // Get a single transaction by id
-router.get('/:id', async (req, res) => {
-  try {
-    const transaction = await db('transaction').where({ id: Number(req.params.id) }).first();
-    if (!transaction) return res.status(404).json({ error: 'Transaction not found' });
-    res.json(transaction);
-  } catch (err) {
-    res.status(500).json({ error: 'Failed to fetch transaction' });
+// Get a single transaction by id (owner or admin)
+router.get('/:id', jwtMiddleware, async (req, res) => {
+  const userId = (req as any).user?.id;
+  const isAdmin = (req as any).user?.role === 'admin';
+  const transaction = await db('transaction').where({ id: Number(req.params.id) }).first();
+  if (!transaction) return res.status(404).json({ error: 'Transaction not found' });
+  if (!isAdmin && transaction.user_id !== userId) {
+    return res.status(403).json({ error: 'Forbidden' });
   }
+  res.json(transaction);
 });
 
 // Create a transaction (initiate payment)
-router.post('/', async (req, res) => {
+// Create a transaction (authenticated user only)
+router.post('/', jwtMiddleware, async (req, res) => {
+  const userId = (req as any).user?.id;
   try {
-    const inserted: any = await db('transaction').insert(req.body).returning('id');
+    const inserted: any = await db('transaction').insert({ ...req.body, user_id: userId }).returning('id');
     let id;
     if (Array.isArray(inserted)) {
       if (typeof inserted[0] === 'object' && inserted[0] !== null && 'id' in inserted[0]) {
@@ -71,22 +94,36 @@ router.post('/', async (req, res) => {
 });
 
 // Update a transaction (e.g., update status)
-router.put('/:id', async (req, res) => {
+// Update a transaction (owner or admin)
+router.put('/:id', jwtMiddleware, async (req, res) => {
+  const userId = (req as any).user?.id;
+  const isAdmin = (req as any).user?.role === 'admin';
+  const transaction = await db('transaction').where({ id: Number(req.params.id) }).first();
+  if (!transaction) return res.status(404).json({ error: 'Transaction not found' });
+  if (!isAdmin && transaction.user_id !== userId) {
+    return res.status(403).json({ error: 'Forbidden' });
+  }
   try {
     const updated = await db('transaction').where({ id: Number(req.params.id) }).update(req.body);
-    if (!updated) return res.status(404).json({ error: 'Transaction not found' });
-    const transaction = await db('transaction').where({ id: Number(req.params.id) }).first();
-    res.json(transaction);
+    const updatedTransaction = await db('transaction').where({ id: Number(req.params.id) }).first();
+    res.json(updatedTransaction);
   } catch (err) {
     res.status(400).json({ error: 'Failed to update transaction' });
   }
 });
 
 // Delete a transaction
-router.delete('/:id', async (req, res) => {
+// Delete a transaction (owner or admin)
+router.delete('/:id', jwtMiddleware, async (req, res) => {
+  const userId = (req as any).user?.id;
+  const isAdmin = (req as any).user?.role === 'admin';
+  const transaction = await db('transaction').where({ id: Number(req.params.id) }).first();
+  if (!transaction) return res.status(404).json({ error: 'Transaction not found' });
+  if (!isAdmin && transaction.user_id !== userId) {
+    return res.status(403).json({ error: 'Forbidden' });
+  }
   try {
     const deleted = await db('transaction').where({ id: Number(req.params.id) }).del();
-    if (!deleted) return res.status(404).json({ error: 'Transaction not found' });
     res.json({ success: true });
   } catch (err) {
     res.status(400).json({ error: 'Failed to delete transaction' });

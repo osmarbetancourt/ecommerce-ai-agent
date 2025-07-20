@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { jwtMiddleware, requireAdmin } from '../middleware/auth';
 import knex from 'knex';
 import config from '../../knexfile';
 const environment = process.env.NODE_ENV || 'development';
@@ -7,7 +8,8 @@ const db = knex(config[environment]);
 const router = Router();
 
 // List all roles
-router.get('/', async (req, res) => {
+// List all roles (admin only)
+router.get('/', jwtMiddleware, requireAdmin, async (req, res) => {
   try {
     const roles = await db('role').select('*');
     res.json(roles);
@@ -17,7 +19,8 @@ router.get('/', async (req, res) => {
 });
 
 // Get a single role by id
-router.get('/:id', async (req, res) => {
+// Get a single role by id (admin only)
+router.get('/:id', jwtMiddleware, requireAdmin, async (req, res) => {
   try {
     const role = await db('role').where({ id: Number(req.params.id) }).first();
     if (!role) return res.status(404).json({ error: 'Role not found' });
@@ -28,7 +31,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // Add a role
-router.post('/', async (req, res) => {
+router.post('/', jwtMiddleware, requireAdmin, async (req, res) => {
   try {
     const inserted: any = await db('role').insert(req.body).returning('id');
     let id;
@@ -51,7 +54,7 @@ router.post('/', async (req, res) => {
 });
 
 // Update a role
-router.put('/:id', async (req, res) => {
+router.put('/:id', jwtMiddleware, requireAdmin, async (req, res) => {
   try {
     const updated = await db('role').where({ id: Number(req.params.id) }).update(req.body);
     if (!updated) return res.status(404).json({ error: 'Role not found' });
@@ -63,7 +66,7 @@ router.put('/:id', async (req, res) => {
 });
 
 // Delete a role
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', jwtMiddleware, requireAdmin, async (req, res) => {
   try {
     const deleted = await db('role').where({ id: Number(req.params.id) }).del();
     if (!deleted) return res.status(404).json({ error: 'Role not found' });

@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { jwtMiddleware, requireAdmin } from '../middleware/auth';
 import knex from 'knex';
 import config from '../../knexfile';
 const environment = process.env.NODE_ENV || 'development';
@@ -40,7 +41,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // Add a search index entry
-router.post('/', async (req, res) => {
+router.post('/', jwtMiddleware, requireAdmin, async (req, res) => {
   try {
     const inserted: any = await db('search_index').insert(req.body).returning('id');
     let id;
@@ -63,7 +64,7 @@ router.post('/', async (req, res) => {
 });
 
 // Update a search index entry
-router.put('/:id', async (req, res) => {
+router.put('/:id', jwtMiddleware, requireAdmin, async (req, res) => {
   try {
     const updated = await db('search_index').where({ id: Number(req.params.id) }).update(req.body);
     if (!updated) return res.status(404).json({ error: 'Search index entry not found' });
@@ -75,7 +76,7 @@ router.put('/:id', async (req, res) => {
 });
 
 // Delete a search index entry
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', jwtMiddleware, requireAdmin, async (req, res) => {
   try {
     const deleted = await db('search_index').where({ id: Number(req.params.id) }).del();
     if (!deleted) return res.status(404).json({ error: 'Search index entry not found' });

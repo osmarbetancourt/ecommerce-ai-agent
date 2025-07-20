@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { jwtMiddleware, requireAdmin } from '../middleware/auth';
 import knex from 'knex';
 import config from '../../knexfile';
 import { OAuth2Client } from 'google-auth-library';
@@ -111,7 +112,8 @@ router.post('/oauth/google', async (req, res) => {
 
 
 // List all users
-router.get('/', async (req, res) => {
+// List all users (admin only)
+router.get('/', jwtMiddleware, requireAdmin, async (req, res) => {
   try {
     const users = await db('user').select('*');
     res.json(users);
@@ -121,6 +123,7 @@ router.get('/', async (req, res) => {
 });
 
 // Register a new user
+// Register a new user (public)
 router.post('/register', async (req, res) => {
   try {
     const { name, email } = req.body;
@@ -156,7 +159,13 @@ router.post('/register', async (req, res) => {
 // Remove password login endpoint (Google OAuth only)
 
 // Update user profile (name, address, phone, avatar, roles)
-router.put('/:id', async (req, res) => {
+// Update user profile (owner or admin)
+router.put('/:id', jwtMiddleware, async (req, res) => {
+  const userId = (req as any).user?.id;
+  const isAdmin = (req as any).user?.role === 'admin';
+  if (!isAdmin && Number(req.params.id) !== userId) {
+    return res.status(403).json({ error: 'Forbidden' });
+  }
   try {
     // Use avatar_url instead of avatar, and role instead of roles
     const updateData = { ...req.body };
@@ -178,7 +187,8 @@ router.put('/:id', async (req, res) => {
 });
 
 // Delete user
-router.delete('/:id', async (req, res) => {
+// Delete user (admin only)
+router.delete('/:id', jwtMiddleware, requireAdmin, async (req, res) => {
   try {
     const deleted = await db('user').where({ id: Number(req.params.id) }).del();
     if (!deleted) return res.status(404).json({ error: 'User not found' });
@@ -189,22 +199,15 @@ router.delete('/:id', async (req, res) => {
 });
 
 // Get current user info from JWT in cookie
-router.get('/me', async (req, res) => {
+// Get current user info from JWT in cookie (authenticated only)
+router.get('/me', jwtMiddleware, async (req, res) => {
   try {
-    const token = req.cookies?.jwt;
-    if (!token) {
+    const userId = (req as any).user?.id;
+    if (!userId) {
       return res.status(401).json({ error: 'Not authenticated' });
     }
-    const jwt = require('jsonwebtoken');
-    const JWT_SECRET = process.env.JWT_SECRET || 'changeme';
-    let payload;
-    try {
-      payload = jwt.verify(token, JWT_SECRET);
-    } catch (err) {
-      return res.status(401).json({ error: 'Invalid or expired token' });
-    }
     // Fetch user from DB to ensure fresh info
-    const user = await db('user').where({ id: payload.id }).first();
+    const user = await db('user').where({ id: userId }).first();
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
