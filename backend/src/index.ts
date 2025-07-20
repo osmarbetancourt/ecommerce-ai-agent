@@ -21,6 +21,8 @@ import rolesRouter from './routes/roles';
 import searchIndexRouter from './routes/search_index';
 import transactionsRouter from './routes/transactions';
 
+import cookieParser from 'cookie-parser';
+
 const environment = process.env.NODE_ENV || 'development';
 
 const db = knex(config[environment]);
@@ -62,6 +64,7 @@ export function createApp() {
   const app = express();
   app.use(cors());
   app.use(express.json());
+  app.use(cookieParser());
 
   // Healthcheck endpoint for Docker
   app.get('/health', (req, res) => {

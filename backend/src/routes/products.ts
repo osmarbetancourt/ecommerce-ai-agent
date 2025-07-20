@@ -15,15 +15,25 @@ const router = Router();
 
 router.get('/', async (req, res) => {
   try {
-    const { search } = req.query;
-    let query = db('product').select('*');
+    const { search, category } = req.query;
+    let query = db('product').select('product.*');
+
+    // If category filter is present, join with category table and filter by name
+    if (category && typeof category === 'string' && category.trim() !== '') {
+      query = query
+        .join('category', 'product.category_id', 'category.id')
+        .whereRaw('LOWER(category.name) = ?', [category.trim().toLowerCase()]);
+    }
+
+    // If search filter is present, filter by name or description
     if (search && typeof search === 'string' && search.trim() !== '') {
       const term = `%${search.trim().toLowerCase()}%`;
       query = query.where(function() {
-        this.whereRaw('LOWER(name) LIKE ?', [term])
-          .orWhereRaw('LOWER(description) LIKE ?', [term]);
+        this.whereRaw('LOWER(product.name) LIKE ?', [term])
+          .orWhereRaw('LOWER(product.description) LIKE ?', [term]);
       });
     }
+
     const products = await query;
     res.json(products.map(normalizeProduct));
   } catch (err) {

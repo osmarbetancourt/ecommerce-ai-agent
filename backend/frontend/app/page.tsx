@@ -55,8 +55,8 @@ export default function Home() {
         <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
           <main style={{ flex: 1 }}>
             <Header audioRef={audioRef} />
-            <Categories />
             <Products />
+            <Categories />
           </main>
           <Footer />
         </div>

@@ -6,6 +6,7 @@
 | Column      | Type     | Constraints                | Notes                       |
 |-------------|----------|---------------------------|-----------------------------|
 | id          | integer  | PK, NOT NULL, auto-incr   |                             |
+| user_id     | integer  | FK, NOT NULL, UNIQUE      | References USER(id), one cart per user |
 | created_at  | timestamp with time zone | DEFAULT CURRENT_TIMESTAMP |   |
 
 ## CART_ITEM

@@ -96,7 +96,14 @@ router.post('/oauth/google', async (req, res) => {
       role: user.role || null,
     };
     const token = jwt.sign(tokenPayload, JWT_SECRET, { expiresIn: '7d' });
-    res.json({ user, token });
+    // Set JWT as httpOnly cookie
+    res.cookie('jwt', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+    });
+    res.json({ user });
   } catch (err) {
     res.status(400).json({ error: (err as any)?.message || 'Google OAuth failed' });
   }
@@ -178,6 +185,32 @@ router.delete('/:id', async (req, res) => {
     res.json({ success: true });
   } catch (err) {
     res.status(400).json({ error: 'Failed to delete user' });
+  }
+});
+
+// Get current user info from JWT in cookie
+router.get('/me', async (req, res) => {
+  try {
+    const token = req.cookies?.jwt;
+    if (!token) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+    const jwt = require('jsonwebtoken');
+    const JWT_SECRET = process.env.JWT_SECRET || 'changeme';
+    let payload;
+    try {
+      payload = jwt.verify(token, JWT_SECRET);
+    } catch (err) {
+      return res.status(401).json({ error: 'Invalid or expired token' });
+    }
+    // Fetch user from DB to ensure fresh info
+    const user = await db('user').where({ id: payload.id }).first();
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    res.json({ user });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch user info' });
   }
 });
 

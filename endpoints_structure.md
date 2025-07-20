@@ -363,7 +363,20 @@
    ```
 **Required Body Params:**
   - code (string)
-**Response:** User object with JWT token
+**Response:**
+  - User object
+  - JWT is set as an httpOnly cookie (not returned in response body)
+
+### GET /api/users/me
+- **Description:** Get the current authenticated user's info from JWT cookie
+- **Example:**
+  ```http
+  GET /api/users/me
+  ```
+- **Response:**
+  - `{ user: { ...user fields... } }` if authenticated
+  - 401 if not authenticated
+  - 404 if user not found
 
 ### GET /api/users
 - **Description:** List all users
@@ -417,6 +430,8 @@
   DELETE /api/users/1
   ```
 - **Response:** `{ success: true }` or 404 if not found
+
+
 
 ---
 

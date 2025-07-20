@@ -5,6 +5,32 @@ const environment = process.env.NODE_ENV || 'development';
 const db = knex(config[environment]);
 
 const router = Router();
+// Get or create the current user's cart
+router.get('/me', async (req, res) => {
+  // For now, mock user_id (replace with JWT extraction later)
+  const user_id = Number(req.headers['x-user-id'] || 1); // Replace with real user id logic
+  try {
+    let cart = await db('cart').where({ user_id }).first();
+    if (!cart) {
+      const inserted = await db('cart').insert({ user_id }).returning('id');
+      let id;
+      if (Array.isArray(inserted)) {
+        if (typeof inserted[0] === 'object' && inserted[0] !== null && 'id' in inserted[0]) {
+          id = inserted[0].id;
+        } else {
+          id = inserted[0];
+        }
+      } else {
+        id = inserted;
+      }
+      cart = await db('cart').where({ id: Number(id) }).first();
+    }
+    const items = await db('cart_item').where({ cart_id: cart.id });
+    res.json({ ...cart, items });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch or create cart' });
+  }
+});
 
 router.get('/', async (req, res) => {
   try {

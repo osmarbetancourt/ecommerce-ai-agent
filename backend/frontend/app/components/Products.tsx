@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
+import Link from "next/link";
 
 const SLIDES_VISIBLE = 4;
 const SLIDE_WIDTH = 220;
@@ -90,85 +91,8 @@ export default function Products() {
           }}
         >
           {products.map((prod, idx) => (
-            <div key={prod.id || idx} style={{
-              width: `${SLIDE_WIDTH}px`,
-              height: "260px",
-              background: "#fff",
-              borderRadius: "1.2rem",
-              boxShadow: "0 2px 16px 0 #E67E2233",
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              justifyContent: "center",
-              position: "relative",
-              border: "1.5px solid #E67E22",
-              minWidth: `${SLIDE_WIDTH}px`,
-              maxWidth: `${SLIDE_WIDTH}px`,
-              overflow: "hidden"
-            }}>
-              <img
-                src={prod.image_url || "/fresh-food-logo.png"}
-                alt={prod.name || "Product"}
-                style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "1.2rem" }}
-                onError={e => { e.currentTarget.src = "/fresh-food-logo.png"; }}
-              />
+            <Link key={prod.id || idx} href={`/product/${prod.id}`} style={{ textDecoration: "none" }}>
               <div style={{
-                position: "absolute",
-                top: "0.7rem",
-                left: 0,
-                width: "100%",
-                textAlign: "center",
-                fontWeight: 700,
-                fontSize: "1.08rem",
-                color: "#222",
-                textShadow: "0 2px 8px #fff, 0 1px 2px #fff",
-                background: "rgba(255,255,255,0.12)",
-                padding: "0.2rem 0"
-              }}>{prod.name}</div>
-              <div style={{
-                position: "absolute",
-                bottom: "1rem",
-                left: "1rem",
-                borderRadius: "0.7rem",
-                background: "rgba(0,0,0,0.85)",
-                color: "#fff",
-                fontWeight: 700,
-                fontSize: "1.08rem",
-                padding: "0.35rem 1.1rem",
-                boxShadow: "0 2px 8px rgba(0,0,0,0.18)",
-                zIndex: 2
-              }}>${prod.price}</div>
-            </div>
-          ))}
-        </div>
-      </div>
-      {/* Second carousel: right to left, random order */}
-      <div style={{
-        width: "100vw",
-        overflow: "hidden",
-        position: "relative",
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center"
-      }}>
-        <div
-          ref={carouselRef2}
-          style={{
-            display: "flex",
-            gap: "0.75rem",
-            transition: "transform 0.1s linear",
-            willChange: "transform"
-          }}
-        >
-          {(() => {
-            // Shuffle products array for random order
-            const shuffled = [...products];
-            for (let i = shuffled.length - 1; i > 0; i--) {
-              const j = Math.floor(Math.random() * (i + 1));
-              [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-            }
-            return shuffled.map((prod, idx) => (
-              <div key={prod.id || idx} style={{
                 width: `${SLIDE_WIDTH}px`,
                 height: "260px",
                 background: "#fff",
@@ -182,8 +106,12 @@ export default function Products() {
                 border: "1.5px solid #E67E22",
                 minWidth: `${SLIDE_WIDTH}px`,
                 maxWidth: `${SLIDE_WIDTH}px`,
-                overflow: "hidden"
-              }}>
+                overflow: "hidden",
+                transition: "box-shadow 0.2s, transform 0.2s",
+              }}
+              onMouseEnter={e => { e.currentTarget.style.boxShadow = "0 4px 24px 0 #E67E2266"; e.currentTarget.style.transform = "scale(1.03)"; }}
+              onMouseLeave={e => { e.currentTarget.style.boxShadow = "0 2px 16px 0 #E67E2233"; e.currentTarget.style.transform = "scale(1)"; }}
+              >
                 <img
                   src={prod.image_url || "/fresh-food-logo.png"}
                   alt={prod.name || "Product"}
@@ -217,6 +145,91 @@ export default function Products() {
                   zIndex: 2
                 }}>${prod.price}</div>
               </div>
+            </Link>
+          ))}
+        </div>
+      </div>
+      {/* Second carousel: right to left, random order */}
+      <div style={{
+        width: "100vw",
+        overflow: "hidden",
+        position: "relative",
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center"
+      }}>
+        <div
+          ref={carouselRef2}
+          style={{
+            display: "flex",
+            gap: "0.75rem",
+            transition: "transform 0.1s linear",
+            willChange: "transform"
+          }}
+        >
+          {(() => {
+            // Shuffle products array for random order
+            const shuffled = [...products];
+            for (let i = shuffled.length - 1; i > 0; i--) {
+              const j = Math.floor(Math.random() * (i + 1));
+              [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+            }
+            return shuffled.map((prod, idx) => (
+              <Link key={prod.id || idx} href={`/product/${prod.id}`} style={{ textDecoration: "none" }}>
+                <div style={{
+                  width: `${SLIDE_WIDTH}px`,
+                  height: "260px",
+                  background: "#fff",
+                  borderRadius: "1.2rem",
+                  boxShadow: "0 2px 16px 0 #E67E2233",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  position: "relative",
+                  border: "1.5px solid #E67E22",
+                  minWidth: `${SLIDE_WIDTH}px`,
+                  maxWidth: `${SLIDE_WIDTH}px`,
+                  overflow: "hidden",
+                  transition: "box-shadow 0.2s, transform 0.2s",
+                }}
+                onMouseEnter={e => { e.currentTarget.style.boxShadow = "0 4px 24px 0 #E67E2266"; e.currentTarget.style.transform = "scale(1.03)"; }}
+                onMouseLeave={e => { e.currentTarget.style.boxShadow = "0 2px 16px 0 #E67E2233"; e.currentTarget.style.transform = "scale(1)"; }}
+                >
+                  <img
+                    src={prod.image_url || "/fresh-food-logo.png"}
+                    alt={prod.name || "Product"}
+                    style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "1.2rem" }}
+                    onError={e => { e.currentTarget.src = "/fresh-food-logo.png"; }}
+                  />
+                  <div style={{
+                    position: "absolute",
+                    top: "0.7rem",
+                    left: 0,
+                    width: "100%",
+                    textAlign: "center",
+                    fontWeight: 700,
+                    fontSize: "1.08rem",
+                    color: "#222",
+                    textShadow: "0 2px 8px #fff, 0 1px 2px #fff",
+                    background: "rgba(255,255,255,0.12)",
+                    padding: "0.2rem 0"
+                  }}>{prod.name}</div>
+                  <div style={{
+                    position: "absolute",
+                    bottom: "1rem",
+                    left: "1rem",
+                    borderRadius: "0.7rem",
+                    background: "rgba(0,0,0,0.85)",
+                    color: "#fff",
+                    fontWeight: 700,
+                    fontSize: "1.08rem",
+                    padding: "0.35rem 1.1rem",
+                    boxShadow: "0 2px 8px rgba(0,0,0,0.18)",
+                    zIndex: 2
+                  }}>${prod.price}</div>
+                </div>
+              </Link>
             ));
           })()}
         </div>

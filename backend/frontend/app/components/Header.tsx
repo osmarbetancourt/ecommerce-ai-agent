@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useAuth } from "./AuthContext";
 import axios from 'axios';
 import { googleLogout, useGoogleLogin } from '@react-oauth/google';
 import { RefObject } from "react";
@@ -8,6 +9,7 @@ type HeaderProps = { audioRef?: RefObject<HTMLAudioElement | null> };
 export default function Header({ audioRef }: HeaderProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [activeSection, setActiveSection] = useState<string>("shop");
+  const { user, login, logout, setUser } = useAuth();
 
   useEffect(() => {
     if (typeof window !== "undefined" && window.location.hash) {
@@ -19,10 +21,8 @@ export default function Header({ audioRef }: HeaderProps) {
     window.addEventListener('hashchange', onHashChange);
     return () => window.removeEventListener('hashchange', onHashChange);
   }, []);
-  // User state
-  const [user, setUser] = useState<any>(null);
-  // Custom Google login button logic
-  const login = useGoogleLogin({
+
+  const googleLogin = useGoogleLogin({
     onSuccess: async (tokenResponse: any) => {
       try {
         // Get authorization code from Google response
@@ -30,9 +30,8 @@ export default function Header({ audioRef }: HeaderProps) {
         if (!code) throw new Error('No authorization code received');
         // Send code to backend for secure id_token exchange
         const res = await axios.post('/api/users/oauth/google', { code });
-        const { token, user } = res.data;
-        localStorage.setItem('jwt', token);
-        setUser(user);
+        const { user: userData } = res.data;
+        login(userData); // JWT is now set as httpOnly cookie by backend
       } catch (err: any) {
         alert('Google Login Failed: ' + (err?.response?.data?.error || err.message));
       }
@@ -45,14 +44,6 @@ export default function Header({ audioRef }: HeaderProps) {
   });
   const cartItems = 0; // Replace with actual cart items count
   const cartCount = user && cartItems > 0 ? cartItems : 0;
-
-  useEffect(() => {
-    const onHashChange = () => {
-      setActiveSection(window.location.hash.replace('#', ''));
-    };
-    window.addEventListener('hashchange', onHashChange);
-    return () => window.removeEventListener('hashchange', onHashChange);
-  }, []);
   return (
     <header
       style={{
@@ -300,46 +291,59 @@ export default function Header({ audioRef }: HeaderProps) {
             </button>
           </div>
           {/* Search bar */}
-            <form role="search" aria-label="Site search" className="header-search-form" style={{ display: 'flex', alignItems: 'center', flex: 1, maxWidth: 340, minWidth: 180, marginLeft: 24, marginRight: 12, position: 'relative', borderRadius: 18, boxShadow: '0 2px 16px 0 rgba(230,126,34,0.10)', background: 'rgba(255,251,233,0.85)', border: '1.5px solid #f4c54244', padding: '0.15rem 0.2rem', backdropFilter: 'blur(4px)' }}>
-            <input
-              type="search"
-              placeholder="Search..."
-              aria-label="Search products"
-              className="header-search-input"
-              style={{
-                width: '100%',
-                padding: '0.7rem 2.2rem 0.7rem 1.1rem',
-                borderRadius: 14,
-                border: '1.5px solid #f4c54288',
-                fontSize: '1.05rem',
-                fontFamily: 'Inter, Arial, sans-serif',
-                background: 'rgba(255,251,233,0.95)',
-                color: '#E67E22',
-                fontWeight: 500,
-                outline: 'none',
-                boxShadow: '0 2px 8px rgba(230,126,34,0.08)',
-                transition: 'border 0.2s, box-shadow 0.2s, background 0.2s',
+            <form
+              role="search"
+              aria-label="Site search"
+              className="header-search-form"
+              style={{ display: 'flex', alignItems: 'center', flex: 1, maxWidth: 340, minWidth: 180, marginLeft: 24, marginRight: 12, position: 'relative', borderRadius: 18, boxShadow: '0 2px 16px 0 rgba(230,126,34,0.10)', background: 'rgba(255,251,233,0.85)', border: '1.5px solid #f4c54244', padding: '0.15rem 0.2rem', backdropFilter: 'blur(4px)' }}
+              onSubmit={e => {
+                e.preventDefault();
+                const input = e.currentTarget.querySelector('input');
+                const value = input?.value.trim();
+                if (value) {
+                  window.location.href = `/search?query=${encodeURIComponent(value)}`;
+                }
               }}
-            />
-            <button type="submit" aria-label="Search" style={{
-              position: 'absolute',
-              right: 8,
-              top: '50%',
-              transform: 'translateY(-50%)',
-              background: 'none',
-              border: 'none',
-              padding: 0,
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}>
-              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true" focusable="false">
-                <circle cx="9" cy="9" r="7" stroke="#E67E22" strokeWidth="2" />
-                <line x1="15" y1="15" x2="19" y2="19" stroke="#E67E22" strokeWidth="2" strokeLinecap="round" />
-              </svg>
-            </button>
-          </form>
+            >
+              <input
+                type="search"
+                placeholder="Search..."
+                aria-label="Search products"
+                className="header-search-input"
+                style={{
+                  width: '100%',
+                  padding: '0.7rem 2.2rem 0.7rem 1.1rem',
+                  borderRadius: 14,
+                  border: '1.5px solid #f4c54288',
+                  fontSize: '1.05rem',
+                  fontFamily: 'Inter, Arial, sans-serif',
+                  background: 'rgba(255,251,233,0.95)',
+                  color: '#E67E22',
+                  fontWeight: 500,
+                  outline: 'none',
+                  boxShadow: '0 2px 8px rgba(230,126,34,0.08)',
+                  transition: 'border 0.2s, box-shadow 0.2s, background 0.2s',
+                }}
+              />
+              <button type="submit" aria-label="Search" style={{
+                position: 'absolute',
+                right: 8,
+                top: '50%',
+                transform: 'translateY(-50%)',
+                background: 'none',
+                border: 'none',
+                padding: 0,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}>
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true" focusable="false">
+                  <circle cx="9" cy="9" r="7" stroke="#E67E22" strokeWidth="2" />
+                  <line x1="15" y1="15" x2="19" y2="19" stroke="#E67E22" strokeWidth="2" strokeLinecap="round" />
+                </svg>
+              </button>
+            </form>
           {/* Desktop navigation */}
           <nav className="nav-desktop" style={{ display: "flex", gap: "1.2rem", fontFamily: 'Inter, sans-serif', alignItems: 'center', justifyContent: 'flex-end', flex: 1 }}>
             <a
@@ -393,14 +397,13 @@ export default function Header({ audioRef }: HeaderProps) {
                   }}
                     onClick={() => {
                       googleLogout();
-                      setUser(null);
-                      localStorage.removeItem('jwt');
+                      logout();
                     }}
                   >Logout</button>
                 </>
               ) : (
                 <button
-                onClick={() => login()}
+                onClick={() => googleLogin()}
                 aria-label="Sign in with Google"
                 style={{
                   display: 'flex',
@@ -439,11 +442,16 @@ export default function Header({ audioRef }: HeaderProps) {
                 </button>
               )}
             </span>
-            <a
-              href="#cart"
-              className={activeSection === "cart" ? "active" : ""}
+            <button
               aria-label="Cart"
-              style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', position: 'relative' }}
+              style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', position: 'relative', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+              onClick={() => {
+                if (user) {
+                  window.location.href = '/cart';
+                } else {
+                  alert('Please sign in to view your cart.');
+                }
+              }}
             >
               <span style={{ display: 'inline-flex', alignItems: 'center', position: 'relative' }}>
                 {/* Cart Icon - SVG from svgrepo.com, standard orientation, no transforms */}
@@ -476,7 +484,7 @@ export default function Header({ audioRef }: HeaderProps) {
                   >{cartCount}</span>
                 )}
               </span>
-            </a>
+            </button>
           </nav>
           {/* Mobile hamburger button */}
           <button
@@ -569,14 +577,13 @@ export default function Header({ audioRef }: HeaderProps) {
                     }}
                       onClick={() => {
                         googleLogout();
-                        setUser(null);
-                        localStorage.removeItem('jwt');
+                        logout();
                       }}
                     >Logout</button>
                   </>
                 ) : (
                   <button
-                    onClick={() => login()}
+                    onClick={() => googleLogin()}
                     aria-label="Sign in with Google"
                     style={{
                       display: 'flex',

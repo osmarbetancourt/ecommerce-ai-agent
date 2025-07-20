@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import Link from "next/link";
 
 const IMAGE_MAP: Record<string, string> = {
   "Bakery & Desserts": "https://encrypted-tbn2.gstatic.com/images?q=tbn:ANd9GcSVPJxvuHN4YthdlWyDta8xjlqJ09nhoLo6h-AMy7xQfmVBP5iA0RTXWiAHw_nm",
@@ -64,14 +65,15 @@ export default function Categories() {
           const span = mosaicSpans[cat.name] || { col: 1, row: 1 };
           
           return (
-            <a
+            <Link
               key={cat.id || cat.name}
-              href={"/category/" + encodeURIComponent(cat.name)}
+              href={`/search?category=${encodeURIComponent(cat.name)}`}
               className="category-item"
               style={{
                 gridColumn: `span ${span.col}`,
                 gridRow: `span ${span.row}`,
                 background: imageUrl ? `url(${imageUrl}) center/cover no-repeat` : "#E67E22",
+                textDecoration: "none"
               }}
               onMouseEnter={e => {
                 e.currentTarget.style.boxShadow = "0 6px 24px 0 rgba(0,0,0,0.18)";
@@ -88,7 +90,7 @@ export default function Categories() {
                 <span className="category-name">{cat.name}</span>
                 <span className="category-description">{description}</span>
               </div>
-            </a>
+            </Link>
           );
         })}
       </div>
