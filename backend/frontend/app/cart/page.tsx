@@ -114,6 +114,62 @@ export default function CartPage() {
     groupedItems = Object.entries(groupMap).map(([product_id, { quantity, ids }]) => ({ product_id: Number(product_id), quantity, ids }));
   }
 
+  // Add/Remove item handlers
+  const handleAddItem = async (product_id: number) => {
+    setLoading(true);
+    setError(null);
+    try {
+      await fetch(`/api/cart-items`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ product_id, quantity: 1 }),
+      });
+      // Refetch cart
+      const res = await fetch("/api/carts/me", { credentials: "include" });
+      if (!res.ok) throw new Error("Failed to fetch cart after add");
+      const data = await res.json();
+      setCart(data);
+    } catch (err) {
+      setError("Failed to add item.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRemoveItem = async (group: { product_id: number; quantity: number; ids: number[] }) => {
+    setLoading(true);
+    setError(null);
+    try {
+      if (group.quantity <= 1) {
+        // Remove all items for this product
+        await Promise.all(
+          group.ids.map(async (id) => {
+            await fetch(`/api/cart-items/${id}`, {
+              method: "DELETE",
+              credentials: "include",
+            });
+          })
+        );
+      } else {
+        // Remove one item (assume each id is a single quantity)
+        await fetch(`/api/cart-items/${group.ids[0]}`, {
+          method: "DELETE",
+          credentials: "include",
+        });
+      }
+      // Refetch cart
+      const res = await fetch("/api/carts/me", { credentials: "include" });
+      if (!res.ok) throw new Error("Failed to fetch cart after remove");
+      const data = await res.json();
+      setCart(data);
+    } catch (err) {
+      setError("Failed to remove item.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <GoogleOAuthProvider clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || ""}>
       <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
@@ -136,6 +192,10 @@ export default function CartPage() {
                             <div style={{ fontWeight: 700, fontSize: "1.15rem" }}>{prod.name}</div>
                             <div style={{ color: "#444" }}>{prod.description}</div>
                             <div style={{ color: "#E67E22", fontWeight: 700 }}>${prod.price} x {group.quantity}</div>
+                            <div style={{ marginTop: "0.7rem", display: "flex", gap: "0.7rem" }}>
+                              <button onClick={() => handleRemoveItem(group)} disabled={loading} style={{ padding: "0.3rem 1rem", fontSize: "1.1rem", borderRadius: "0.7rem", border: "none", background: "#E67E22", color: "#fff", cursor: "pointer" }}>−</button>
+                              <button onClick={() => handleAddItem(group.product_id)} disabled={loading} style={{ padding: "0.3rem 1rem", fontSize: "1.1rem", borderRadius: "0.7rem", border: "none", background: "#27ae60", color: "#fff", cursor: "pointer" }}>+</button>
+                            </div>
                           </div>
                         </div>
                       ) : (

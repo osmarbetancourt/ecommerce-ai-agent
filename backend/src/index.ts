@@ -4,6 +4,7 @@ import path from 'path';
 import next from 'next';
 import knex from 'knex';
 import config from '../knexfile';
+
 import productsRouter from './routes/products';
 import usersRouter from './routes/users';
 import categoriesRouter from './routes/categories';
@@ -20,6 +21,7 @@ import reviewsRouter from './routes/reviews';
 import rolesRouter from './routes/roles';
 import searchIndexRouter from './routes/search_index';
 import transactionsRouter from './routes/transactions';
+import agentRouter from './routes/agent';
 
 import cookieParser from 'cookie-parser';
 import { apiRateLimiter, securityHeaders, corsMiddleware, csrfProtection } from './middleware/security';
@@ -115,6 +117,7 @@ export function createApp() {
   app.use('/api/roles', rolesRouter);
   app.use('/api/search-index', searchIndexRouter);
   app.use('/api/transactions', transactionsRouter);
+  app.use('/api/agent', agentRouter);
 
   // Only add Next.js catch-all if not in test
   if (!isTest && handle) {
