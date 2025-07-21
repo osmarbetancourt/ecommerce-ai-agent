@@ -26,6 +26,7 @@ const reviews_1 = __importDefault(require("./routes/reviews"));
 const roles_1 = __importDefault(require("./routes/roles"));
 const search_index_1 = __importDefault(require("./routes/search_index"));
 const transactions_1 = __importDefault(require("./routes/transactions"));
+const agent_1 = __importDefault(require("./routes/agent"));
 const cookie_parser_1 = __importDefault(require("cookie-parser"));
 const environment = process.env.NODE_ENV || 'development';
 const db = (0, knex_1.default)(knexfile_1.default[environment]);
@@ -109,6 +110,7 @@ function createApp() {
     app.use('/api/roles', roles_1.default);
     app.use('/api/search-index', search_index_1.default);
     app.use('/api/transactions', transactions_1.default);
+    app.use('/api/agent', agent_1.default);
     // Only add Next.js catch-all if not in test
     if (!isTest && handle) {
         app.all('*', (req, res) => handle(req, res));
