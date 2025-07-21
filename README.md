@@ -32,14 +32,11 @@ docker compose exec backend npm run test
 ## FEATURES
 
 ### AI Agent Chatbot
-- Conversational assistant that can:
+ Conversational assistant that can:
   - Accept recipes, dish ideas, or ingredient requests
   - Search online and in the database (using the search index and message history for context/memory)
   - Suggest recipes and required products
   - Add, remove, or review products in your cart
-  - Mimic payment (credit card, PayPal) using stored payment methods (no real payment processing)
-  - Create orders and transactions, send order confirmation/status emails
-  - Mimic delivery status updates (can be triggered by cron/scheduled jobs)
 
 ### System Constraints
 - Only one live conversation per user for simplicity
@@ -72,3 +69,25 @@ docker compose exec backend npm run test
 ---
 
 This project is designed for extensibility, security, and AI/LLM integration. All features and constraints are documented for easy onboarding and future development.
+---
+
+## Upcoming Features
+
+The following features are planned but not yet implemented:
+
+### Admin & Data Management
+- Admin interface for managing products, SKUs, users, orders, etc. (similar to Django admin, built in React/TS)
+- CSV upload/import for bulk adding SKUs/products (no new table needed; process and insert via script/API)
+- Script to populate tables with dummy grocery store data (run manually)
+
+### Analytics & BI
+- Analytics section with endpoints for data retrieval (GET only)
+- Real-time graphics and live SQL editor for admins to run read-only queries
+- Tableau/Power BI compatibility via read-only DB user/connection (SELECT queries only)
+- Role-based access for analytics features (admin or custom analytics role)
+- AI assistant for analytics: can answer questions, generate reports, and build queries based on DB schema
+
+### AI Agent Chatbot
+  - Mimic payment (credit card, PayPal) using stored payment methods (no real payment processing)
+  - Create orders and transactions, send order confirmation/status emails
+  - Mimic delivery status updates (can be triggered by cron/scheduled jobs)

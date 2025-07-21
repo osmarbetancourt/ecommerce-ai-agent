@@ -1,4 +1,44 @@
 # API Endpoints Documentation
+#
+## Agent
+
+### GET /api/agent/conversation
+- **Description:** Return current user's conversation messages
+- **Example:**
+  ```http
+  GET /api/agent/conversation
+  ```
+- **Response:** `{ history: [ { role, content } ] }`
+
+### POST /api/agent/chat
+- **Description:** Handle chat messages, agent actions, and cart logic
+- **Example:**
+  ```http
+  POST /api/agent/chat
+  Content-Type: application/json
+  {
+    "message": "Add milk to my cart"
+  }
+  ```
+- **Required Body Params:**
+  - message (string)
+- **Response:** `{ response, conversationId, action, actionStatus, cartLog }`
+
+### DELETE /api/agent/conversation/:userId
+- **Description:** Wipe a user's conversation for fresh testing
+- **Example:**
+  ```http
+  DELETE /api/agent/conversation/1
+  ```
+- **Response:** `{ success: true }`
+
+### POST /api/agent/end
+- **Description:** End the user's session, delete conversation/messages, return thank you
+- **Example:**
+  ```http
+  POST /api/agent/end
+  ```
+- **Response:** `{ message: "Thank you for being with us. Your session has ended and your conversation was safely deleted." }`
 
 ## Products
 

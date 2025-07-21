@@ -273,27 +273,45 @@ export async function classifyConfirmationWithLLM(
  */
 export async function detectIntentWithLLM(userMessage: string): Promise<AgentIntent> {
   const systemPrompt = `You are an intent classifier for a grocery shopping assistant. The possible intents are:
-- add_to_cart: The user wants to add a product or ingredient to their cart. Example: "Add milk to my cart."
-- remove_from_cart: The user wants to remove a product or ingredient from their cart. Example: "Remove eggs from my cart."
-- show_cart: The user wants to see the contents of their cart. Example: "Show me my cart."
-- recommend_product: The user wants a product recommendation. Example: "Recommend a snack."
-- make_dish: The user wants to make a dish and needs ingredients. Example: "I want to make lasagna."
-- end_session: The user wants to end or pay for their cart, cancel their cart, or finish the shopping session. Examples: "Cancel my cart.", "Pay my cart.", "End my session.", "Checkout and finish."
-- unknown: The user's intent does not match any of the above.
-Classify the user's intent based on their message. Only reply with the intent name.`;
+  add_to_cart: The user wants to add a product or ingredient to their cart. Example: "Add milk to my cart."
+  remove_from_cart: The user wants to remove a product or ingredient from their cart. Example: "Remove eggs from my cart."
+  show_cart: The user wants to see the contents of their cart. Example: "Show me my cart."
+  recommend_product: The user wants a product recommendation. Example: "Recommend a snack."
+  make_dish: The user wants to make a dish and needs ingredients. Example: "I want to make lasagna."
+  end_session: The user wants to end or pay for their cart, cancel their cart, checkout, finish, or close the shopping session. Examples: "Cancel my cart.", "Pay my cart.", "End my session.", "Checkout and finish.", "Finish shopping.", "Close cart.", "Proceed to payment.", "I want to pay.", "I want to checkout.", "Complete my order.", "Finalize purchase.", "Cancel order."
+  unknown: The user's intent does not match any of the above.
+  Classify the user's intent based on their message. Only reply with the intent name.`;
   const promptMessages = [
     { role: 'system', content: systemPrompt },
     { role: 'user', content: userMessage }
   ];
+
+  // Manual fallback for payment/checkout/finish/close/cancel phrases
+  const lowerMsg = userMessage.toLowerCase();
+  const endSessionPatterns = [
+    /pay(ment)?(\b|$)/i,
+    /checkout(\b|$)/i,
+    /finish(\b|$)/i,
+    /close( cart)?(\b|$)/i,
+    /cancel( cart| order)?(\b|$)/i,
+    /finalize( purchase| order)?(\b|$)/i,
+    /complete( my)?( order| purchase)?(\b|$)/i,
+    /proceed to payment/i,
+    /finalize/i
+  ];
+  if (endSessionPatterns.some(re => re.test(lowerMsg))) {
+    return { action: 'end_session' };
+  }
+
   const result = (await callLLM(promptMessages, 'intent')).trim();
   switch (result) {
     case 'add_to_cart': {
-      const addMatch = userMessage.toLowerCase().match(/add (.+?) to (my )?cart/);
+      const addMatch = lowerMsg.match(/add (.+?) to (my )?cart/);
       return { action: 'add_to_cart', product: addMatch ? addMatch[1].trim() : '' };
     }
     case 'remove_from_cart': {
       let product = '';
-      const removeMatch = userMessage.toLowerCase().match(/remove (.+?) from (my )?cart/);
+      const removeMatch = lowerMsg.match(/remove (.+?) from (my )?cart/);
       if (removeMatch) {
         product = removeMatch[1].trim();
       }
@@ -309,12 +327,12 @@ Classify the user's intent based on their message. Only reply with the intent na
     case 'show_cart':
       return { action: 'show_cart' };
     case 'recommend_product': {
-      const recommendMatch = userMessage.toLowerCase().match(/recommend (.+)/);
+      const recommendMatch = lowerMsg.match(/recommend (.+)/);
       return { action: 'recommend_product', query: recommendMatch ? recommendMatch[1].trim() : '' };
     }
     case 'make_dish': {
-      const makeDishMatch = userMessage.toLowerCase().match(/(?:make|cook|prepare|i want to make|i want to cook|i want to prepare) (a |an |the )?([a-zA-Z ]+)/);
-      const needForDishMatch = userMessage.toLowerCase().match(/items i need for (making|cooking|preparing) (a |an |the )?([a-zA-Z ]+)/);
+      const makeDishMatch = lowerMsg.match(/(?:make|cook|prepare|i want to make|i want to cook|i want to prepare) (a |an |the )?([a-zA-Z ]+)/);
+      const needForDishMatch = lowerMsg.match(/items i need for (making|cooking|preparing) (a |an |the )?([a-zA-Z ]+)/);
       const dish = makeDishMatch ? makeDishMatch[2].trim() : (needForDishMatch ? needForDishMatch[3].trim() : '');
       return { action: 'make_dish', dish };
     }

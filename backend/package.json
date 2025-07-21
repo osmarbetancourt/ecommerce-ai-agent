@@ -16,7 +16,8 @@
     "populate_db": "ts-node scripts/populate-db.ts",
     "nuke_products": "ts-node scripts/nuke-products.ts",
     "test": "jest",
-    "test-sec": "jest --config ./tests/jest.middleware.config.js"
+    "test-sec": "jest --config ./tests/jest.middleware.config.js",
+    "start:prod": "npm run build && cd frontend && npm install && npm run start & node dist/src/index.js"
   },
   "dependencies": {
     "@huggingface/inference": "^4.5.3",

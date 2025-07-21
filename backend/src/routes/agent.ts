@@ -25,6 +25,24 @@ async function getConversationMessages(conversationId: number) {
   return await db('message').where({ conversation_id: conversationId }).orderBy('created_at');
 }
 
+// GET /api/agent/conversation - Return current user's conversation messages
+router.get('/conversation', jwtMiddleware, async (req, res) => {
+  const userId = (req as any).user?.id;
+  if (!userId) return res.status(401).json({ error: 'Not authenticated.' });
+  try {
+    const conversation = await db('conversation').where({ user_id: userId }).first();
+    if (!conversation) {
+      return res.json({ history: [] });
+    }
+    const messages = await getConversationMessages(conversation.id);
+    // Return as { role, content }
+    const history = messages.map(msg => ({ role: msg.sender, content: msg.content }));
+    res.json({ history });
+  } catch (err) {
+    console.error('[agent/get/conversation] Error:', err);
+    res.status(500).json({ error: 'Error fetching conversation.' });
+  }
+});
 // POST /api/agent/chat
 router.post('/chat', jwtMiddleware, async (req, res) => {
   try {
@@ -96,8 +114,17 @@ router.post('/chat', jwtMiddleware, async (req, res) => {
     // --- Perform backend cart actions if confirmed and intent is actionable ---
     if (actionResult.confirmed && actionResult.intent.action !== 'unknown') {
       try {
-        if (actionResult.intent.action === 'add_to_cart') {
-          // Use LLM-powered extraction utility
+        if (actionResult.intent.action === 'end_session') {
+          // End session: delete conversation/messages and return thank you
+          if (conversation) {
+            await db('message').where({ conversation_id: conversation.id }).del();
+            await db('conversation').where({ id: conversation.id }).del();
+          }
+          responseText = 'Thank you for being with us. Your session has ended and your conversation was safely deleted.';
+          actionStatus = 'Session ended.';
+          cartLog = null;
+        } else if (actionResult.intent.action === 'add_to_cart') {
+          // Use LLM-powered extraction utility for product name
           const { extractProductsFromMessage } = await import('../services/ragPipeline');
           const extraction = await extractProductsFromMessage(message, 'add');
           if (extraction.products.length > 1) {
@@ -137,9 +164,7 @@ router.post('/chat', jwtMiddleware, async (req, res) => {
                 { role: 'system', content: `You are an AI assistant for a supermarket. The user asked to add "${productName}" to their cart.` },
                 { role: 'user', content: `Here are the matching products:\n${productList}\n\nWhich product best matches the user's request? Reply with the product name.` }
               ];
-              console.log('[Ranking LLM] Calling Ranking LLM with prompt:', rerankPrompt);
               const llmResponse = await callLLM(rerankPrompt, 'ranking');
-              console.log('[Ranking LLM] Response:', llmResponse);
               const llmReply = llmResponse.trim().toLowerCase();
               const found = products.find(p => p.name.toLowerCase().includes(llmReply));
               if (found) selectedProduct = found;
@@ -194,12 +219,10 @@ router.post('/chat', jwtMiddleware, async (req, res) => {
             if (products.length > 1) {
               const productList = products.map((p, i) => `${i + 1}. ${p.name}`).join('\n');
               const rerankPrompt = [
-                { role: 'system', content: `You are an AI assistant for a supermarket. The user asked to remove \"${productName}\" from their cart.` },
+                { role: 'system', content: `You are an AI assistant for a supermarket. The user asked to remove "${productName}" from their cart.` },
                 { role: 'user', content: `Here are the matching products in the cart:\n${productList}\n\nWhich product best matches the user's request? Reply with the product name.` }
               ];
-              console.log('[Ranking LLM] Calling Ranking LLM with prompt:', rerankPrompt);
               const llmResponse = await callLLM(rerankPrompt, 'ranking');
-              console.log('[Ranking LLM] Response:', llmResponse);
               const llmReply = llmResponse.trim().toLowerCase();
               const found = products.find(p => p.name.toLowerCase().includes(llmReply));
               if (found) selectedProduct = found;
@@ -251,19 +274,23 @@ router.post('/chat', jwtMiddleware, async (req, res) => {
       }
     }
 
-    // Store user and assistant messages
-    // Post-processing: always show backend result for cart actions, override LLM on error
+    // Store user and assistant messages unless session was ended (conversation deleted)
     let finalResponse = responseText;
     if (actionStatus && /^Action error:/i.test(actionStatus)) {
-      // For errors, send a generic, friendly fallback message with AI note
       finalResponse = 'Sorry, something went wrong with your request. This might be because the product was not found in your cart, or there was a technical issue. Would you like to see your cart contents or try again?'
         + '\n\n[Note: This action was decided by our AI assistant. The message is generated by the backend for clarity.]';
     } else if (actionStatus && (/^Added /i.test(actionStatus) || /^Removed /i.test(actionStatus))) {
-      // For successful cart actions, use direct custom messages with AI note
       finalResponse = actionStatus + '\n\n[Note: This action was decided by our AI assistant. The message is generated by the backend for clarity.]';
     }
-    await db('message').insert({ conversation_id: conversationId, sender: 'user', content: message });
-    await db('message').insert({ conversation_id: conversationId, sender: 'assistant', content: finalResponse });
+
+    // Only insert messages if conversation still exists and session is not ended
+    if (actionResult.intent.action !== 'end_session') {
+      const stillExists = await db('conversation').where({ id: conversationId }).first();
+      if (stillExists) {
+        await db('message').insert({ conversation_id: conversationId, sender: 'user', content: message });
+        await db('message').insert({ conversation_id: conversationId, sender: 'assistant', content: finalResponse });
+      }
+    }
     res.json({ response: finalResponse, conversationId, action: actionResult, actionStatus, cartLog });
   } catch (err) {
     console.error('[agent/chat] Error:', err);

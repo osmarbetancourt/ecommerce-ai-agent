@@ -8,6 +8,7 @@ import Categories from "./components/Categories";
 import Products from "./components/Products";
 import Footer from "./components/Footer";
 import { GoogleOAuthProvider } from '@react-oauth/google';
+import ChatAssistant from "./components/ChatAssistant";
 
 export default function Home() {
   const [splashDone, setSplashDone] = useState(false);
@@ -67,6 +68,7 @@ export default function Home() {
             <Header audioRef={audioRef} />
             <Products />
             <Categories />
+            <ChatAssistant />
           </main>
           <Footer />
         </div>
