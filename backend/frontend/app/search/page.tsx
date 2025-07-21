@@ -58,104 +58,43 @@ export default function SearchPage() {
               Category: {category}
             </div>
           )}
-          <form onSubmit={handleSearch} style={{ display: "flex", gap: "1rem", marginBottom: "2.2rem" }}>
+          <form className="search-form" onSubmit={handleSearch}>
             <input
               type="text"
               value={query}
               onChange={e => setQuery(e.target.value)}
               placeholder="Search for products..."
-              style={{
-                fontSize: "1.15rem",
-                padding: "0.7rem 1.2rem",
-                borderRadius: "1.2rem",
-                border: "1.5px solid #E67E22",
-                background: "#fff",
-                minWidth: "320px"
-              }}
+              className="search-input"
             />
             <button
               type="submit"
-              style={{
-                fontSize: "1.15rem",
-                fontWeight: 700,
-                padding: "0.7rem 2.2rem",
-                borderRadius: "1.2rem",
-                border: "none",
-                background: "linear-gradient(90deg, #E67E22 0%, #F4C542 100%)",
-                color: "#fff",
-                cursor: "pointer",
-                boxShadow: "0 2px 8px 0 rgba(230,126,34,0.10)"
-              }}
+              className="search-btn"
               disabled={loading}
             >
               {loading ? "Searching..." : "Search"}
             </button>
           </form>
-          <div style={{ width: "100%", maxWidth: "1100px", margin: "0 auto" }}>
+          <div className="search-results-grid">
             {results.length === 0 && !loading && (
-              <div style={{ textAlign: "center", color: "#888", fontSize: "1.15rem" }}>No products found.</div>
+              <div className="no-products">No products found.</div>
             )}
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "2rem" }}>
+            <div className="results-grid">
               {results.map(prod => (
-                <div key={prod.id} style={{ position: "relative" }}>
+                <div key={prod.id} className="product-card">
                   <Link href={`/product/${prod.id}`} style={{ textDecoration: "none" }}>
-                    <div style={{
-                      background: "#fff",
-                      borderRadius: "1.2rem",
-                      boxShadow: "0 2px 16px 0 #E67E2233",
-                      border: "1.5px solid #E67E22",
-                      padding: "1.2rem",
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      minHeight: "260px",
-                      position: "relative",
-                      transition: "box-shadow 0.2s, transform 0.2s",
-                    }}
-                    onMouseEnter={e => { e.currentTarget.style.boxShadow = "0 4px 24px 0 #E67E2266"; e.currentTarget.style.transform = "scale(1.03)"; }}
-                    onMouseLeave={e => { e.currentTarget.style.boxShadow = "0 2px 16px 0 #E67E2233"; e.currentTarget.style.transform = "scale(1)"; }}
-                    >
+                    <div className="product-card-inner">
                       <img
                         src={prod.image_url || "/fresh-food-logo.png"}
                         alt={prod.name || "Product"}
-                        style={{ width: "100%", height: "160px", objectFit: "cover", borderRadius: "1.2rem" }}
+                        className="product-image"
                         onError={e => { e.currentTarget.src = "/fresh-food-logo.png"; }}
                       />
-                      <div style={{
-                        fontWeight: 700,
-                        fontSize: "1.08rem",
-                        color: "#222",
-                        textAlign: "center",
-                        marginTop: "0.7rem"
-                      }}>{prod.name}</div>
-                      <div style={{
-                        marginTop: "0.5rem",
-                        borderRadius: "0.7rem",
-                        background: "rgba(0,0,0,0.85)",
-                        color: "#fff",
-                        fontWeight: 700,
-                        fontSize: "1.08rem",
-                        padding: "0.35rem 1.1rem",
-                        boxShadow: "0 2px 8px rgba(0,0,0,0.18)",
-                        zIndex: 2
-                      }}>${prod.price}</div>
+                      <div className="product-name">{prod.name}</div>
+                      <div className="product-price">${prod.price}</div>
                     </div>
                   </Link>
                   <button
-                    style={{
-                      marginTop: "0.7rem",
-                      fontSize: "1rem",
-                      fontWeight: 700,
-                      padding: "0.5rem 1.2rem",
-                      borderRadius: "1.1rem",
-                      border: "none",
-                      background: user ? "linear-gradient(90deg, #E67E22 0%, #F4C542 100%)" : "#ccc",
-                      color: "#fff",
-                      cursor: user ? "pointer" : "not-allowed",
-                      boxShadow: "0 2px 8px 0 rgba(230,126,34,0.10)",
-                      width: "100%"
-                    }}
+                    className="add-to-cart-btn"
                     disabled={!user}
                     onClick={async () => {
                       if (!user) {
@@ -184,7 +123,7 @@ export default function SearchPage() {
                       }
                     }}
                   >{user ? "Add to Cart" : "Sign in to Add"}</button>
-                  {addStatus[prod.id] && <div style={{ marginTop: "0.3rem", color: addStatus[prod.id] === "Added to cart!" ? "green" : "red", fontWeight: 700 }}>{addStatus[prod.id]}</div>}
+                  {addStatus[prod.id] && <div className="add-status" style={{ marginTop: "0.3rem", color: addStatus[prod.id] === "Added to cart!" ? "green" : "red", fontWeight: 700 }}>{addStatus[prod.id]}</div>}
                 </div>
               ))}
             </div>
@@ -211,6 +150,163 @@ export default function SearchPage() {
             margin: 0.18rem auto 0 auto;
             background: linear-gradient(90deg, #E67E22 0%, #F4C542 100%);
             box-shadow: 0 2px 8px 0 rgba(230,126,34,0.10);
+          }
+          .search-form {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2.2rem;
+            width: 100%;
+            max-width: 600px;
+            padding: 0 1rem;
+          }
+          .search-input {
+            font-size: 1.15rem;
+            padding: 0.7rem 1.2rem;
+            border-radius: 1.2rem;
+            border: 1.5px solid #E67E22;
+            background: #fff;
+            width: 100%;
+            min-width: 0;
+            box-sizing: border-box;
+          }
+          .search-btn {
+            font-size: 1.15rem;
+            font-weight: 700;
+            padding: 0.7rem 2.2rem;
+            border-radius: 1.2rem;
+            border: none;
+            background: linear-gradient(90deg, #E67E22 0%, #F4C542 100%);
+            color: #fff;
+            cursor: pointer;
+            box-shadow: 0 2px 8px 0 rgba(230,126,34,0.10);
+            transition: background 0.2s, box-shadow 0.2s, color 0.2s;
+          }
+          .search-btn:disabled {
+            background: #ccc;
+            color: #fff;
+            cursor: not-allowed;
+          }
+          .search-results-grid {
+            width: 100%;
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 0 1rem;
+          }
+          .no-products {
+            text-align: center;
+            color: #888;
+            font-size: 1.15rem;
+          }
+          .results-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 2rem;
+          }
+          .product-card {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+            min-width: 0;
+          }
+          .product-card-inner {
+            background: #fff;
+            border-radius: 1.2rem;
+            box-shadow: 0 2px 16px 0 #E67E2233;
+            border: 1.5px solid #E67E22;
+            padding: 1.2rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 260px;
+            position: relative;
+            transition: box-shadow 0.2s, transform 0.2s;
+            width: 100%;
+          }
+          .product-card-inner:hover {
+            box-shadow: 0 4px 24px 0 #E67E2266;
+            transform: scale(1.03);
+          }
+          .product-image {
+            width: 100%;
+            height: 160px;
+            object-fit: cover;
+            border-radius: 1.2rem;
+          }
+          .product-name {
+            font-weight: 700;
+            font-size: 1.08rem;
+            color: #222;
+            text-align: center;
+            margin-top: 0.7rem;
+          }
+          .product-price {
+            margin-top: 0.5rem;
+            border-radius: 0.7rem;
+            background: rgba(0,0,0,0.85);
+            color: #fff;
+            font-weight: 700;
+            font-size: 1.08rem;
+            padding: 0.35rem 1.1rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+            z-index: 2;
+          }
+          .add-to-cart-btn {
+            margin-top: 0.7rem;
+            font-size: 1rem;
+            font-weight: 700;
+            padding: 0.5rem 1.2rem;
+            border-radius: 1.1rem;
+            border: none;
+            background: linear-gradient(90deg, #E67E22 0%, #F4C542 100%);
+            color: #fff;
+            cursor: pointer;
+            box-shadow: 0 2px 8px 0 rgba(230,126,34,0.10);
+            width: 100%;
+            transition: background 0.2s, box-shadow 0.2s, color 0.2s;
+          }
+          .add-to-cart-btn:disabled {
+            background: #ccc;
+            color: #fff;
+            cursor: not-allowed;
+          }
+          .add-status {
+            margin-top: 0.3rem;
+            font-weight: 700;
+          }
+          @media (max-width: 900px) {
+            .results-grid {
+              gap: 1.2rem;
+            }
+            .search-results-grid {
+              padding: 0 0.5rem;
+            }
+            .search-form {
+              max-width: 100vw;
+              padding: 0 0.5rem;
+            }
+          }
+          @media (max-width: 600px) {
+            .results-grid {
+              grid-template-columns: 1fr;
+              gap: 1rem;
+            }
+            .product-card-inner {
+              min-height: 180px;
+              padding: 0.7rem;
+            }
+            .product-image {
+              height: 110px;
+            }
+            .search-title {
+              font-size: 1.5rem;
+            }
+            .search-form {
+              flex-direction: column;
+              gap: 0.7rem;
+              padding: 0 0.2rem;
+            }
           }
         `}</style>
       </div>

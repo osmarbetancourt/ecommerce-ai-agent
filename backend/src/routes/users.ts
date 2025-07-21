@@ -11,6 +11,7 @@ router.post('/oauth/google', async (req, res) => {
   try {
     const { code } = req.body;
     if (!code) {
+      console.error('[Google OAuth] No authorization code received');
       return res.status(400).json({ error: 'Authorization code is required' });
     }
     // Exchange code for tokens
@@ -18,8 +19,14 @@ router.post('/oauth/google', async (req, res) => {
     const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
     const REDIRECT_URI = process.env.GOOGLE_REDIRECT_URI;
     if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET || !REDIRECT_URI) {
+      console.error('[Google OAuth] Missing environment variables', { GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, REDIRECT_URI });
       return res.status(500).json({ error: 'Google OAuth environment variables missing' });
     }
+    console.log('[Google OAuth] Exchanging code for tokens', {
+      code,
+      client_id: GOOGLE_CLIENT_ID,
+      redirect_uri: REDIRECT_URI
+    });
     const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -32,8 +39,10 @@ router.post('/oauth/google', async (req, res) => {
       }),
     });
     const tokenData = await tokenRes.json();
+    console.log('[Google OAuth] Token response from Google:', tokenData);
     if (!tokenData.id_token) {
-      return res.status(400).json({ error: 'Failed to exchange code for id_token' });
+      console.error('[Google OAuth] Failed to exchange code for id_token', tokenData);
+      return res.status(400).json({ error: 'Failed to exchange code for id_token', details: tokenData });
     }
     // Verify id_token
     const ticket = await oauthClient.verifyIdToken({
