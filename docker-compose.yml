@@ -1,6 +1,9 @@
 services:
   backend:
-    build: backend/.
+    build:
+      context: backend/.
+      args:
+        NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${NEXT_PUBLIC_GOOGLE_CLIENT_ID}
     ports:
       - "5000:5000"
     env_file:
