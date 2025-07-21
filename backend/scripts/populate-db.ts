@@ -1,8 +1,7 @@
 
 import fs from 'fs';
 import readline from 'readline';
-import knex from 'knex';
-import config from '../knexfile';
+import { db } from '../src/index';
 
 // Fixed categories
 const FIXED_CATEGORIES = [
@@ -29,9 +28,6 @@ const FIXED_CATEGORIES = [
 
 const JSONL_PATH = __dirname + '/groceries_with_images_2.jsonl';
 const MAX_PRODUCTS = 1400;
-
-const environment = process.env.NODE_ENV || 'development';
-const db = knex(config[environment]);
 
 async function main() {
   // 1. Insert categories and store their IDs

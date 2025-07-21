@@ -7,7 +7,6 @@ import { RefObject } from "react";
 type HeaderProps = { audioRef?: RefObject<HTMLAudioElement | null> };
 
 function HeaderContent({ audioRef }: HeaderProps) {
-  console.log('NEXT_PUBLIC_GOOGLE_CLIENT_ID (header):', process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID);
   const [menuOpen, setMenuOpen] = useState(false);
   const [activeSection, setActiveSection] = useState<string>("shop");
   const { user, login, logout, setUser } = useAuth();
