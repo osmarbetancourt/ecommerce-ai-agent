@@ -1,9 +1,6 @@
 import { Router } from 'express';
-import knex from 'knex';
-import config from '../../knexfile';
 import { jwtMiddleware, requireAdmin } from '../middleware/auth';
-const environment = process.env.NODE_ENV || 'development';
-const db = knex(config[environment]);
+import { db } from '../index';
 
 const router = Router();
 

@@ -50,6 +50,7 @@ export default function Home() {
     setShowSplashAfterMagic(true);
   };
 
+  console.log('NEXT_PUBLIC_GOOGLE_CLIENT_ID (page):', process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID);
   return (
     <GoogleOAuthProvider clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || ""}>
       {/* Persistent audio element for MagicSplash sound */}

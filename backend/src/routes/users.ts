@@ -1,14 +1,10 @@
 import { Router } from 'express';
 import { jwtMiddleware, requireAdmin } from '../middleware/auth';
-import knex from 'knex';
-import config from '../../knexfile';
 import { OAuth2Client } from 'google-auth-library';
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
 const oauthClient = new OAuth2Client(GOOGLE_CLIENT_ID);
-
-const environment = process.env.NODE_ENV || 'development';
-const db = knex(config[environment]);
+import { db } from '../index';
 const router = Router();
 // Google OAuth login/register
 router.post('/oauth/google', async (req, res) => {

@@ -3,7 +3,7 @@ import cors from 'cors';
 import path from 'path';
 import next from 'next';
 import knex from 'knex';
-const config = require('../knexfile');
+import config from '../knexfile';
 
 import productsRouter from './routes/products';
 import usersRouter from './routes/users';
@@ -141,3 +141,4 @@ async function startServer() {
 
 // Export for testing and server start
 export default createApp;
+export { db };

@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "./AuthContext";
 import axios from 'axios';
-import { googleLogout, useGoogleLogin } from '@react-oauth/google';
+import { googleLogout, useGoogleLogin, GoogleOAuthProvider } from '@react-oauth/google';
 import { RefObject } from "react";
 
 type HeaderProps = { audioRef?: RefObject<HTMLAudioElement | null> };
 
-export default function Header({ audioRef }: HeaderProps) {
+function HeaderContent({ audioRef }: HeaderProps) {
+  console.log('NEXT_PUBLIC_GOOGLE_CLIENT_ID (header):', process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID);
   const [menuOpen, setMenuOpen] = useState(false);
   const [activeSection, setActiveSection] = useState<string>("shop");
   const { user, login, logout, setUser } = useAuth();
@@ -627,5 +628,13 @@ export default function Header({ audioRef }: HeaderProps) {
         </div>
       </div>
     </header>
+  );
+}
+
+export default function Header(props: HeaderProps) {
+  return (
+    <GoogleOAuthProvider clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || ""}>
+      <HeaderContent {...props} />
+    </GoogleOAuthProvider>
   );
 }

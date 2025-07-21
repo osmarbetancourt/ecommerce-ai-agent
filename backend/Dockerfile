@@ -8,7 +8,9 @@ RUN apk add --no-cache curl
 COPY package*.json ./
 RUN npm install --frozen-lockfile
 
+
 COPY . .
+COPY .env ./frontend/.env
 
 RUN npm run build
 

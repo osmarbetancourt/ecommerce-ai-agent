@@ -3,11 +3,9 @@
 import express from 'express';
 import { jwtMiddleware } from '../middleware/auth';
 import { buildPrompt, callLLM, extractUrls, isUrlSafe, fetchAndParseUrl, trimConversationToFitTokens, countTokens } from '../services/ragPipeline';
-import knex from 'knex';
-import config from '../../knexfile';
 
 const router = express.Router();
-const db = knex(config[process.env.NODE_ENV || 'development']);
+import { db } from '../index';
 
 // Helper: get or create one conversation per user
 async function getOrCreateConversation(userId: number) {
