@@ -3,7 +3,7 @@ import cors from 'cors';
 import path from 'path';
 import next from 'next';
 import knex from 'knex';
-import config from '../knexfile';
+const config = require('../knexfile');
 
 import productsRouter from './routes/products';
 import usersRouter from './routes/users';
