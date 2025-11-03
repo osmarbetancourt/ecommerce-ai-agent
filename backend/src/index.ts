@@ -32,16 +32,13 @@ const db = knex(config[environment]);
 
 const isTest = !!process.env.JEST_WORKER_ID;
 let nextApp: any, handle: any;
-if (!isTest) {
+
+// Only initialize Next.js and start server when running as main module
+if (require.main === module) {
   const dev = process.env.NODE_ENV !== 'production';
   nextApp = next({ dev, dir: path.resolve(__dirname, '../../frontend') });
   handle = nextApp.getRequestHandler();
-}
 
-
-// Only run DB connection and migrations when running as main module (not when imported for tests)
-
-if (require.main === module && process.env.NODE_ENV) {
   (async () => {
     try {
       await db.raw('SELECT 1');
@@ -54,9 +51,6 @@ if (require.main === module && process.env.NODE_ENV) {
       // process.exit(1); // Allow frontend testing without DB by not exiting
     }
   })();
-} else {
-  console.log('Skipping DB validation: NODE_ENV is not set or TEST environment');
-  startServer();
 }
 
 

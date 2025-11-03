@@ -3,6 +3,7 @@
 ---
 
 ## CART
+
 | Column      | Type     | Constraints                | Notes                       |
 |-------------|----------|---------------------------|-----------------------------|
 | id          | integer  | PK, NOT NULL, auto-incr   |                             |
@@ -10,21 +11,24 @@
 | created_at  | timestamp with time zone | DEFAULT CURRENT_TIMESTAMP |   |
 
 ## CART_ITEM
+
 | Column      | Type     | Constraints                | Notes                       |
 |-------------|----------|---------------------------|-----------------------------|
 | id          | integer  | PK, NOT NULL, auto-incr   |                             |
 | cart_id     | integer  | FK, NOT NULL, ON DELETE CASCADE | References CART(id)         |
 | product_id  | integer  | FK, NOT NULL, ON DELETE CASCADE | References PRODUCT(id)      |
 | quantity    | integer  | NOT NULL                  |                             |
-| UNIQUE(cart_id, product_id) |          | Ensures one product per cart item |
+| UNIQUE(cart_id, product_id) |          | Ensures one product per cart item |   |
 
 ## CATEGORY
+
 | Column      | Type     | Constraints                | Notes                       |
 |-------------|----------|---------------------------|-----------------------------|
 | id          | integer  | PK, NOT NULL, auto-incr   |                             |
 | name        | character varying | NOT NULL, UNIQUE   |                             |
 
 ## CONVERSATION
+
 | Column      | Type     | Constraints                | Notes                       |
 |-------------|----------|---------------------------|-----------------------------|
 | id          | integer  | PK, NOT NULL, auto-incr   |                             |
@@ -35,6 +39,7 @@
 | updated_at  | timestamp with time zone | DEFAULT CURRENT_TIMESTAMP |   |
 
 ## KNEX_MIGRATIONS
+
 | Column      | Type     | Constraints                | Notes                       |
 |-------------|----------|---------------------------|-----------------------------|
 | id          | integer  | PK, NOT NULL, auto-incr   |                             |
@@ -43,12 +48,14 @@
 | migration_time| timestamp with time zone |         |                             |
 
 ## KNEX_MIGRATIONS_LOCK
+
 | Column      | Type     | Constraints                | Notes                       |
 |-------------|----------|---------------------------|-----------------------------|
 | index       | integer  | PK, NOT NULL, auto-incr   |                             |
 | is_locked   | integer  |                           |                             |
 
 ## MESSAGE
+
 | Column         | Type     | Constraints                | Notes                       |
 |----------------|----------|---------------------------|-----------------------------|
 | id             | integer  | PK, NOT NULL, auto-incr   |                             |
@@ -59,6 +66,7 @@
 | created_at     | timestamp with time zone | DEFAULT CURRENT_TIMESTAMP |   |
 
 ## NOTIFICATION
+
 | Column      | Type     | Constraints                | Notes                       |
 |-------------|----------|---------------------------|-----------------------------|
 | id          | integer  | PK, NOT NULL, auto-incr   |                             |
@@ -69,6 +77,7 @@
 | created_at  | timestamp with time zone | DEFAULT CURRENT_TIMESTAMP |   |
 
 ## ORDER
+
 | Column          | Type     | Constraints                | Notes                       |
 |-----------------|----------|---------------------------|-----------------------------|
 | id              | integer  | PK, NOT NULL, auto-incr   |                             |
@@ -81,6 +90,7 @@
 | payment_status  | character varying | NOT NULL DEFAULT 'pending' |   |
 
 ## ORDER_ITEM
+
 | Column         | Type     | Constraints                | Notes                       |
 |----------------|----------|---------------------------|-----------------------------|
 | id             | integer  | PK, NOT NULL, auto-incr   |                             |
@@ -88,9 +98,10 @@
 | product_id     | integer  | FK, ON DELETE CASCADE     | References PRODUCT(id)      |
 | quantity       | integer  | NOT NULL                  |                             |
 | price_at_purchase| numeric| NOT NULL                  |                             |
-| UNIQUE(order_id, product_id) |          | Ensures one product per order item |
+| UNIQUE(order_id, product_id) |          | Ensures one product per order item |   |
 
 ## PAYMENT_METHOD
+
 | Column      | Type     | Constraints                | Notes                       |
 |-------------|----------|---------------------------|-----------------------------|
 | id          | integer  | PK, NOT NULL, auto-incr   |                             |
@@ -103,6 +114,7 @@
 | created_at  | timestamp with time zone | DEFAULT CURRENT_TIMESTAMP |   |
 
 ## PAYMENT_METHOD_TYPE
+
 | Column      | Type     | Constraints                | Notes                       |
 |-------------|----------|---------------------------|-----------------------------|
 | id          | integer  | PK, NOT NULL, auto-incr   |                             |
@@ -110,6 +122,7 @@
 | description | character varying |                   |                             |
 
 ## PRODUCT
+
 | Column      | Type     | Constraints                | Notes                       |
 |-------------|----------|---------------------------|-----------------------------|
 | id          | integer  | PK, NOT NULL, auto-incr   |                             |
@@ -123,9 +136,10 @@
 | stock_quantity| integer| NOT NULL DEFAULT 0        |                             |
 | tags        | text     |                           |                             |
 | amount_unit | character varying |                   |                             |
-| UNIQUE(name, category_id) |          | Ensures product name is unique per category |
+| UNIQUE(name, category_id) |          | Ensures product name is unique per category |   |
 
 ## REVIEW
+
 | Column      | Type     | Constraints                | Notes                       |
 |-------------|----------|---------------------------|-----------------------------|
 | id          | integer  | PK, NOT NULL, auto-incr   |                             |
@@ -134,9 +148,10 @@
 | rating      | integer  | NOT NULL                  |                             |
 | description | text     |                           |                             |
 | created_at  | timestamp with time zone | DEFAULT CURRENT_TIMESTAMP |   |
-| UNIQUE(user_id, product_id) |          | Ensures one review per user per product |
+| UNIQUE(user_id, product_id) |          | Ensures one review per user per product |   |
 
 ## ROLE
+
 | Column      | Type     | Constraints                | Notes                       |
 |-------------|----------|---------------------------|-----------------------------|
 | id          | integer  | PK, NOT NULL, auto-incr   |                             |
@@ -144,6 +159,7 @@
 | description | character varying |                   |                             |
 
 ## SEARCH_INDEX
+
 | Column      | Type     | Constraints                | Notes                       |
 |-------------|----------|---------------------------|-----------------------------|
 | id          | integer  | PK, NOT NULL, auto-incr   |                             |
@@ -151,9 +167,10 @@
 | ref_id      | integer  | NOT NULL                  | Refers to entity by type    |
 | keywords    | text     | NOT NULL                  |                             |
 | updated_at  | timestamp with time zone | DEFAULT CURRENT_TIMESTAMP |   |
-| INDEX(type, ref_id) |          | For fast lookup by type and reference |
+| INDEX(type, ref_id) |          | For fast lookup by type and reference |   |
 
 ## TRANSACTION
+
 | Column          | Type     | Constraints                | Notes                       |
 |-----------------|----------|---------------------------|-----------------------------|
 | id              | integer  | PK, NOT NULL, auto-incr   |                             |
@@ -166,6 +183,7 @@
 | created_at      | timestamp with time zone | DEFAULT CURRENT_TIMESTAMP |   |
 
 ## USER
+
 | Column      | Type     | Constraints                | Notes                       |
 |-------------|----------|---------------------------|-----------------------------|
 | id          | integer  | PK, NOT NULL, auto-incr   |                             |
@@ -178,10 +196,12 @@
 | phone       | character varying |                   |                             |
 | avatar_url  | character varying |                   |                             |
 | last_login  | timestamp with time zone |            |                             |
-| INDEX(email) |          | For fast lookup by email |
+| INDEX(email) |          | For fast lookup by email |   |
 
 ---
-# Notes
+
+## Notes
+
 - All foreign keys specify ON DELETE rules for referential integrity.
 - Unique constraints and indexes are added for data integrity and performance.
 - Default values are specified for status, booleans, and timestamps.

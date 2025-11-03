@@ -1,0 +1,53 @@
+name: Deploy Ecommerce to Hetzner (Production)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install sshpass
+        run: sudo apt-get update && sudo apt-get install -y sshpass
+
+      - name: Create .env file for backend from GitHub secrets
+        run: |
+          cat <<EOF > .env
+          POSTGRES_DB=${{ secrets.POSTGRES_DB }}
+          POSTGRES_HOST=${{ secrets.POSTGRES_HOST }}
+          POSTGRES_USER=${{ secrets.POSTGRES_USER }}
+          POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}
+          NODE_ENV=production
+          RENDER_API_KEY=${{ secrets.RENDER_API_KEY }}
+          NEXT_PUBLIC_GOOGLE_CLIENT_ID=${{ secrets.NEXT_PUBLIC_GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}
+          GOOGLE_REDIRECT_URI=https://ecommerce.betancourtosmar.com
+          CORS_ORIGIN=https://ecommerce.betancourtosmar.com
+          ADMIN_JWT=${{ secrets.ADMIN_JWT }}
+          ADMIN_EMAIL=${{ secrets.ADMIN_EMAIL }}
+          GOOGLE_SAFE_BROWSING_API_KEY=${{ secrets.GOOGLE_SAFE_BROWSING_API_KEY }}
+          HF_API_TOKEN=${{ secrets.HF_API_TOKEN }}
+          NEXT_PUBLIC_APP_ROUTER_INDICATOR=false
+          HETZNER_API_TOKEN=${{ secrets.HETZNER_API_TOKEN }}
+          HETZNER_HOST=${{ secrets.HETZNER_HOST }}
+          HETZNER_PROJECT_PATH=${{ secrets.HETZNER_PROJECT_PATH }}
+          HETZNER_PASSWORD=${{ secrets.HETZNER_PASSWORD }}
+          HETZNER_USER=${{ secrets.HETZNER_USER }}
+          EOF
+
+      - name: Copy files to Hetzner server
+        run: |
+          sshpass -p "${{ secrets.HETZNER_PASSWORD }}" rsync -az --delete --include='.env' -e "ssh -o StrictHostKeyChecking=no" ./ ${{ secrets.HETZNER_USER }}@${{ secrets.HETZNER_HOST }}:${{ secrets.HETZNER_PROJECT_PATH }}
+
+      - name: Deploy on Hetzner server
+        run: |
+          sshpass -p "${{ secrets.HETZNER_PASSWORD }}" ssh -o StrictHostKeyChecking=no ${{ secrets.HETZNER_USER }}@${{ secrets.HETZNER_HOST }} '
+            cd ${{ secrets.HETZNER_PROJECT_PATH }} &&
+            docker compose pull &&
+            docker compose up -d --build
+          '
